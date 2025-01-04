@@ -1,0 +1,17 @@
+version: "3"
+
+tasks:
+  container-up:
+    cmds:
+      - docker compose up -d
+  container-down:
+    cmds:
+      - docker compose down --remove-orphans --volumes
+  database-add-migration:
+    desc: "Create a new SQL migration file using sqlx-cli, e.g. task database-add-migration -- create_users_table"
+    cmds:
+      - sqlx migrate add {{.CLI_ARGS}} --source migrations/
+  database-migrate:
+    desc: "Run all pending migrations using sqlx-cli"
+    cmds:
+      - sqlx migrate run --source migrations/ --database-url postgres://newsletter:welcome@localhost:15432/newsletter

@@ -14,9 +14,10 @@ name = "zero2prod"
 axum = "0.8"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "macros", "postgres", "uuid", "chrono", "migrate"] }
 
 [dev-dependencies]
 fake = "3.1"
 reqwest = "0.12"
-rstest = "0.24.0"
+rstest = "0.24"
 urlencoding = "2.1"
