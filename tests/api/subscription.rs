@@ -1,0 +1,79 @@
+use fake::faker::internet::en::SafeEmail;
+use fake::faker::name::en::Name;
+use fake::Fake;
+use reqwest::{header, Client, StatusCode};
+
+use crate::helper::App;
+
+#[rstest::rstest]
+#[case(name(), email())]
+#[tokio::test]
+async fn subscription_returns_status_200_with_valid_form_data(
+    #[case] name: Option<String>,
+    #[case] email: Option<String>,
+) {
+    // Arrange
+    let app = App::new().await;
+    let client = Client::new();
+
+    let body = generate_request_body(name, email);
+
+    // Act
+    let response = client
+        .post(app.url("/subscriptions"))
+        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(body)
+        .send()
+        .await
+        .expect("Failed to execute request");
+
+    // Assert
+    assert!(response.status().is_success());
+}
+
+#[rstest::rstest]
+#[case(None, email())]
+#[case(name(), None)]
+#[case(None, None)]
+#[tokio::test]
+async fn subscription_returns_status_400_when_mandatory_field_is_missing(
+    #[case] name: Option<String>,
+    #[case] email: Option<String>,
+) {
+    // Arrange
+    let app = App::new().await;
+    let client = Client::new();
+
+    let body = generate_request_body(name, email);
+
+    // Act
+    let response = client
+        .post(app.url("/subscriptions"))
+        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(body)
+        .send()
+        .await
+        .expect("Failed to execute request");
+
+    // Assert
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+fn name() -> Option<String> {
+    Some(Name().fake())
+}
+
+fn email() -> Option<String> {
+    Some(SafeEmail().fake())
+}
+
+fn generate_request_body(name: Option<String>, email: Option<String>) -> String {
+    let mut body = String::new();
+    if let Some(name) = name {
+        body.push_str(format!("&name={}", &urlencoding::encode(name.as_str())).as_str());
+    };
+    if let Some(email) = email {
+        body.push_str(format!("&email={}", &urlencoding::encode(email.as_str())).as_str());
+    };
+    body.trim_start_matches("/").to_string()
+}
