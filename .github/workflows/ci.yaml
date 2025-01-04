@@ -16,7 +16,7 @@ jobs:
       database:
         image: postgres:17
         ports:
-          - 15432:5432
+          - "15432:5432"
         env:
           POSTGRES_USER: newsletter
           POSTGRES_PASSWORD: welcome

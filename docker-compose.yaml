@@ -4,7 +4,7 @@ services:
     hostname: database
     container_name: database
     ports:
-      - 15432:5432
+      - "15432:5432"
     environment:
       POSTGRES_USER: newsletter
       POSTGRES_PASSWORD: welcome

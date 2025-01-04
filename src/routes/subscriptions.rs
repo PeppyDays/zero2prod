@@ -1,19 +1,16 @@
-use axum::extract::rejection::FormRejection;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Form;
 
+// TODO: Implement the request usage and remove renaming of fields and remove the underscore
 #[derive(Debug, serde::Deserialize)]
 pub struct Request {
+    #[serde(rename = "name")]
     _name: String,
+    #[serde(rename = "email")]
     _email: String,
 }
 
-pub async fn subscribe(form: Result<Form<Request>, FormRejection>) -> impl IntoResponse {
-    if form.is_err() {
-        return StatusCode::BAD_REQUEST;
-    }
-    let Form(_request) = form.unwrap();
-
+pub async fn subscribe(Form(_request): Form<Request>) -> impl IntoResponse {
     StatusCode::OK
 }

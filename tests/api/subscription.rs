@@ -30,7 +30,7 @@ async fn subscription_returns_status_200_with_valid_form_data(
         .expect("Failed to execute request");
 
     // Assert
-    assert!(response.status().is_success());
+    assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[rstest::rstest]
@@ -58,7 +58,7 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
         .expect("Failed to execute request");
 
     // Assert
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 fn name() -> Option<String> {
@@ -77,5 +77,5 @@ fn generate_request_body(name: Option<String>, email: Option<String>) -> String 
     if let Some(email) = email {
         body.push_str(format!("&email={}", &urlencoding::encode(email.as_str())).as_str());
     };
-    body.trim_start_matches("/").to_string()
+    body.trim_start_matches("&").to_string()
 }
