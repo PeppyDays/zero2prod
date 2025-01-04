@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use std::net::SocketAddrV4;
 
 use tokio::net::TcpListener;
+use zero2prod::startup;
 
 pub struct App {
     address: SocketAddr,
@@ -14,7 +15,7 @@ impl App {
             .await
             .expect("Failed to start an app in test");
         let address = listener.local_addr().unwrap();
-        tokio::spawn(zero2prod::run(listener));
+        tokio::spawn(startup::run(listener));
         App { address }
     }
 
