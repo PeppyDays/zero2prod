@@ -1,2 +1,4 @@
 reorder_imports = true
 group_imports = "StdExternalCrate"
+imports_layout = "Vertical"
+imports_granularity = "Item"

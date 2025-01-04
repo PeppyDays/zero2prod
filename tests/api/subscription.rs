@@ -1,7 +1,9 @@
 use fake::faker::internet::en::SafeEmail;
 use fake::faker::name::en::Name;
 use fake::Fake;
-use reqwest::{header, Client, StatusCode};
+use reqwest::header;
+use reqwest::Client;
+use reqwest::StatusCode;
 
 use crate::helper::App;
 

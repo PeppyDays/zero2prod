@@ -5,8 +5,8 @@ use axum::Form;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Request {
-    name: String,
-    email: String,
+    _name: String,
+    _email: String,
 }
 
 pub async fn subscribe(form: Result<Form<Request>, FormRejection>) -> impl IntoResponse {
