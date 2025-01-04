@@ -12,9 +12,22 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    services:
+      database:
+        image: postgres:17
+        ports:
+          - 15432:5432
+        env:
+          POSTGRES_USER: newsletter
+          POSTGRES_PASSWORD: welcome
+          POSTGRES_DB: newsletter
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: arduino/setup-task@v2
+      - run: |
+          task database-install-migrator
+          task database-migrate
       - name: Run tests
         run: cargo test
   lint:

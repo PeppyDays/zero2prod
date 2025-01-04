@@ -7,6 +7,9 @@ tasks:
   container-down:
     cmds:
       - docker compose down --remove-orphans --volumes
+  database-install-migrator:
+    cmds:
+      - cargo install sqlx-cli --no-default-features --features rustls,postgres --locked
   database-add-migration:
     desc: "Create a new SQL migration file using sqlx-cli, e.g. task database-add-migration -- create_users_table"
     cmds:
