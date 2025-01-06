@@ -1,5 +1,8 @@
 version: "3"
 
+dotenv:
+  - .env
+
 tasks:
   container-up:
     cmds:
@@ -17,4 +20,4 @@ tasks:
   database-migrate:
     desc: "Run all pending migrations using sqlx-cli"
     cmds:
-      - sqlx migrate run --source migrations/ --database-url postgres://newsletter:welcome@localhost:15432/newsletter
+      - sqlx migrate run --source migrations/ --database-url $DATABASE_URL
