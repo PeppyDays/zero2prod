@@ -2,10 +2,9 @@ use fake::faker::internet::en::SafeEmail;
 use fake::faker::name::en::Name;
 use fake::Fake;
 use reqwest::header;
-use reqwest::Client;
 use reqwest::StatusCode;
 
-use crate::helper::App;
+use crate::helper::TestApp;
 
 #[rstest::rstest]
 #[case(name(), email())]
@@ -15,14 +14,13 @@ async fn subscription_returns_status_200_with_valid_form_data(
     #[case] email: Option<String>,
 ) {
     // Arrange
-    let app = App::new().await;
-    let client = Client::new();
-
-    let body = generate_request_body(name, email);
+    let app = TestApp::new().await;
+    let body = generate_request_body(name.clone(), email.clone());
 
     // Act
-    let response = client
-        .post(app.url("/subscriptions"))
+    let response = app
+        .http_client
+        .post(app.get_server_request_url("/subscriptions"))
         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
         .body(body)
         .send()
@@ -31,6 +29,14 @@ async fn subscription_returns_status_200_with_valid_form_data(
 
     // Assert
     assert_eq!(response.status(), StatusCode::OK);
+
+    let saved = sqlx::query!("select name, email from subscriptions",)
+        .fetch_one(&app.database_pool)
+        .await
+        .expect("Failed to fetch saved subscription");
+
+    assert_eq!(saved.name, name.unwrap());
+    assert_eq!(saved.email, email.unwrap());
 }
 
 #[rstest::rstest]
@@ -43,14 +49,14 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
     #[case] email: Option<String>,
 ) {
     // Arrange
-    let app = App::new().await;
-    let client = Client::new();
+    let app = TestApp::new().await;
 
     let body = generate_request_body(name, email);
 
     // Act
-    let response = client
-        .post(app.url("/subscriptions"))
+    let response = app
+        .http_client
+        .post(app.get_server_request_url("/subscriptions"))
         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
         .body(body)
         .send()
