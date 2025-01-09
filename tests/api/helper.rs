@@ -25,7 +25,7 @@ pub struct TestApp {
 impl TestApp {
     pub async fn new() -> Self {
         // Get configuration
-        let mut configuration = configuration::get_configuration("configuration.yaml")
+        let mut configuration = configuration::get_configuration(configuration::Environment::Test)
             .expect("Failed to read configuration");
         configuration.database.database = Uuid::new_v4().to_string();
 

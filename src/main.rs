@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::net::Ipv4Addr;
 use std::net::SocketAddrV4;
 use std::time::Duration;
 
@@ -14,10 +13,21 @@ use zero2prod::telemetry::initialise_tracing;
 async fn main() -> Result<(), impl Error> {
     initialise_tracing();
 
-    let configuration = configuration::get_configuration("configuration.yaml")
-        .expect("Failed to read configuration");
+    let env: configuration::Environment = std::env::var("ENVIRONMENT")
+        .unwrap_or_else(|_| "local".into())
+        .try_into()
+        .expect("Failed to determine environment");
+    let configuration =
+        configuration::get_configuration(env).expect("Failed to read configuration");
 
-    let address = SocketAddrV4::new(Ipv4Addr::LOCALHOST, configuration.application.port);
+    let address = SocketAddrV4::new(
+        configuration
+            .application
+            .host
+            .parse()
+            .expect("Failed to parse host"),
+        configuration.application.port,
+    );
     let listener = TcpListener::bind(address)
         .await
         .expect("Failed to bind a port");
