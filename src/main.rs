@@ -7,9 +7,12 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use zero2prod::configuration;
 use zero2prod::startup;
+use zero2prod::telemetry::initialise_tracing;
 
 #[tokio::main]
 async fn main() -> Result<(), impl Error> {
+    initialise_tracing();
+
     let configuration = configuration::get_configuration("configuration.yaml")
         .expect("Failed to read configuration");
 

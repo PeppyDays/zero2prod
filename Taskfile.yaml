@@ -4,6 +4,9 @@ dotenv:
   - .env
 
 tasks:
+  run:
+    cmds:
+      - cargo run | bunyan
   container-up:
     cmds:
       - docker compose up -d
