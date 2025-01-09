@@ -1,14 +1,13 @@
+use std::sync::Arc;
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Form;
-use chrono::Utc;
-use sqlx::types::chrono;
-use sqlx::Pool;
-use sqlx::Postgres;
-use uuid::ContextV7;
-use uuid::Timestamp;
-use uuid::Uuid;
+
+use crate::domain::Email;
+use crate::domain::Subscriber;
+use crate::domain::SubscriptionRepository;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Request {
@@ -18,34 +17,14 @@ pub struct Request {
 
 #[tracing::instrument(name = "Adding a new subscriber", skip_all, fields(email = %request.email))]
 pub async fn subscribe(
-    State(pool): State<Pool<Postgres>>,
+    State(repository): State<Arc<dyn SubscriptionRepository>>,
     Form(request): Form<Request>,
 ) -> impl IntoResponse {
-    match insert_subscriber(&pool, &request.name, &request.email).await {
+    let email: Email = request.email.try_into().unwrap();
+    let subscriber = Subscriber::new(request.name, email);
+
+    match repository.save(&subscriber).await {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
-}
-
-#[tracing::instrument(name = "Saving a new subscriber details in the database", skip_all)]
-async fn insert_subscriber(
-    pool: &Pool<Postgres>,
-    name: &str,
-    email: &str,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "INSERT INTO subscriptions (id, name, email, subscribed_at) VALUES ($1, $2, $3, $4)",
-        Uuid::new_v7(Timestamp::now(ContextV7::new())),
-        name,
-        email,
-        Utc::now().naive_utc(),
-    )
-    .execute(pool)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
-
-    Ok(())
 }
