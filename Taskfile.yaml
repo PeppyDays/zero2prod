@@ -24,3 +24,7 @@ tasks:
     desc: "Run all pending migrations using sqlx-cli"
     cmds:
       - sqlx migrate run --source migrations/ --database-url $DATABASE_URL
+  database-prepare-offline:
+    desc: "Prepare the query metadata for sqlx offline use"
+    cmds:
+      - cargo sqlx prepare --workspace -- --all-targets
