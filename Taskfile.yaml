@@ -28,3 +28,8 @@ tasks:
     desc: "Prepare the query metadata for sqlx offline use"
     cmds:
       - cargo sqlx prepare --workspace -- --all-targets
+  docker-build-*:
+    vars:
+      BIN: "{{index .MATCH 0}}"
+    cmds:
+      - docker build -t zero2prod-api --build-arg BIN={{.BIN}} .
