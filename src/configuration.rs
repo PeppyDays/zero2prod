@@ -1,6 +1,8 @@
 use config::ConfigError;
 use config::File;
 use config::FileFormat;
+use secrecy::ExposeSecret;
+use secrecy::SecretString;
 
 #[derive(serde::Deserialize)]
 pub struct Configuration {
@@ -19,15 +21,19 @@ pub struct DatabaseConfiguration {
     pub port: u16,
     pub database: String,
     pub username: String,
-    pub password: String,
+    pub password: SecretString,
 }
 
 impl DatabaseConfiguration {
-    pub fn connection_string(&self) -> String {
-        format!(
+    pub fn connection_string(&self) -> SecretString {
+        SecretString::from(format!(
             "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.database,
-        )
+            self.username,
+            self.password.expose_secret(),
+            self.host,
+            self.port,
+            self.database,
+        ))
     }
 }
 

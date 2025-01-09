@@ -4,6 +4,7 @@ use std::net::SocketAddrV4;
 use std::time::Duration;
 
 use reqwest::Client;
+use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Connection;
 use sqlx::Executor;
@@ -42,7 +43,7 @@ impl TestApp {
             .min_connections(5)
             .max_connections(5)
             .acquire_timeout(Duration::from_secs(5))
-            .connect(configuration.database.connection_string().as_str())
+            .connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create database connection pool");
 
@@ -77,6 +78,7 @@ impl TestApp {
         // and create randomised database
         let original_connection_string = configuration.database.connection_string();
         let (connection_string_without_database, _) = original_connection_string
+            .expose_secret()
             .rsplit_once("/")
             .expect("Failed to parse database connection string");
 

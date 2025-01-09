@@ -3,6 +3,7 @@ use std::net::Ipv4Addr;
 use std::net::SocketAddrV4;
 use std::time::Duration;
 
+use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use zero2prod::configuration;
@@ -25,7 +26,7 @@ async fn main() -> Result<(), impl Error> {
         .min_connections(5)
         .max_connections(5)
         .acquire_timeout(Duration::from_secs(5))
-        .connect(configuration.database.connection_string().as_str())
+        .connect(configuration.database.connection_string().expose_secret())
         .await
         .expect("Failed to create database connection pool");
 
