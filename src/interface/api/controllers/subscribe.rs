@@ -5,18 +5,18 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Form;
 
-use crate::domain::Email;
-use crate::domain::Subscriber;
-use crate::domain::SubscriptionRepository;
+use crate::domain::models::Email;
+use crate::domain::models::Subscriber;
+use crate::domain::repository::SubscriptionRepository;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(serde::Deserialize)]
 pub struct Request {
     name: String,
     email: String,
 }
 
 #[tracing::instrument(name = "Adding a new subscriber", skip_all, fields(email = %request.email))]
-pub async fn subscribe(
+pub async fn control(
     State(repository): State<Arc<dyn SubscriptionRepository>>,
     Form(request): Form<Request>,
 ) -> impl IntoResponse {

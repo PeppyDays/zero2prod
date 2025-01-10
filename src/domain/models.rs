@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use chrono::DateTime;
 use chrono::Utc;
 use uuid::ContextV7;
@@ -39,9 +41,4 @@ impl AsRef<str> for Email {
     fn as_ref(&self) -> &str {
         &self.0
     }
-}
-
-#[async_trait::async_trait]
-pub trait SubscriptionRepository: Send + Sync + 'static {
-    async fn save(&self, subscriber: &Subscriber) -> Result<(), String>;
 }

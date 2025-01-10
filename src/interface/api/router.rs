@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::sync::Arc;
 
 use axum::extract::FromRef;
@@ -7,18 +6,25 @@ use axum::http::Request;
 use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
-use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 use uuid::ContextV7;
 use uuid::Timestamp;
 use uuid::Uuid;
 
-use crate::domain::SubscriptionRepository;
-use crate::routes;
+use crate::domain::repository::SubscriptionRepository;
+use crate::interface::api::controllers;
 
 #[derive(Clone)]
 pub struct Container {
-    pub repository: Arc<dyn SubscriptionRepository>,
+    repository: Arc<dyn SubscriptionRepository>,
+}
+
+impl Container {
+    pub(crate) fn new(repository: impl SubscriptionRepository) -> Self {
+        Self {
+            repository: Arc::new(repository),
+        }
+    }
 }
 
 impl FromRef<Container> for Arc<dyn SubscriptionRepository> {
@@ -27,11 +33,10 @@ impl FromRef<Container> for Arc<dyn SubscriptionRepository> {
     }
 }
 
-pub async fn run(listener: TcpListener, container: Container) -> Result<(), impl Error> {
-    let app = Router::new()
-        .route("/subscriptions", post(routes::subscriptions::subscribe))
+pub async fn get_router(container: Container) -> Router {
+    Router::new()
+        .route("/subscriptions", post(controllers::subscribe::control))
         .with_state(container)
-        .route("/healthz", get(routes::health_check::check_health))
         .layer(
             // Refer to https://github.com/tokio-rs/axum/blob/main/examples/tracing-aka-logging/Cargo.toml
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
@@ -47,7 +52,6 @@ pub async fn run(listener: TcpListener, container: Container) -> Result<(), impl
                     request_id = %Uuid::new_v7(Timestamp::now(ContextV7::new())),
                 )
             }),
-        );
-
-    axum::serve(listener, app).await
+        )
+        .route("/healthz", get(controllers::check_health::control))
 }

@@ -1,8 +1,8 @@
 use sqlx::Pool;
 use sqlx::Postgres;
 
-use crate::domain::Subscriber;
-use crate::domain::SubscriptionRepository;
+use crate::domain::models::Subscriber;
+use crate::domain::repository::SubscriptionRepository;
 
 pub struct SubscriptionSqlxRepository {
     pool: Pool<Postgres>,

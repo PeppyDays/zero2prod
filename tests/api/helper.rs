@@ -1,7 +1,6 @@
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
-use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::Client;
@@ -15,8 +14,8 @@ use sqlx::Postgres;
 use tokio::net::TcpListener;
 use uuid::Uuid;
 use zero2prod::configuration;
-use zero2prod::infrastructure::SubscriptionSqlxRepository;
-use zero2prod::startup;
+use zero2prod::infrastructure;
+use zero2prod::interface;
 
 pub struct TestApp {
     pub server_address: SocketAddr,
@@ -48,7 +47,7 @@ impl TestApp {
             .connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create database connection pool");
-        let repository = SubscriptionSqlxRepository::new(pool.clone());
+        let repository = infrastructure::repository::SubscriptionSqlxRepository::new(pool.clone());
 
         // migrate database
         sqlx::migrate!("./migrations")
@@ -57,12 +56,7 @@ impl TestApp {
             .expect("Failed to migrate the database");
 
         // Create a server
-        let server = startup::run(
-            listener,
-            startup::Container {
-                repository: Arc::new(repository),
-            },
-        );
+        let server = interface::api::runner::run(listener, repository);
         tokio::spawn(server);
 
         // Create a client

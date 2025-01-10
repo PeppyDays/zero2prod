@@ -1,19 +1,18 @@
 use std::error::Error;
 use std::net::SocketAddrV4;
-use std::sync::Arc;
 use std::time::Duration;
 
 use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use zero2prod::configuration;
-use zero2prod::infrastructure::SubscriptionSqlxRepository;
-use zero2prod::startup;
-use zero2prod::telemetry::initialise_tracing;
+use zero2prod::infrastructure;
+use zero2prod::interface;
+use zero2prod::telemetry;
 
 #[tokio::main]
 async fn main() -> Result<(), impl Error> {
-    initialise_tracing();
+    telemetry::initialise_tracing();
 
     let env: configuration::Environment = std::env::var("ENVIRONMENT")
         .unwrap_or_else(|_| "local".into())
@@ -34,7 +33,7 @@ async fn main() -> Result<(), impl Error> {
         .await
         .expect("Failed to bind a port");
 
-    let repository = SubscriptionSqlxRepository::new(
+    let repository = infrastructure::repository::SubscriptionSqlxRepository::new(
         PgPoolOptions::new()
             .min_connections(5)
             .max_connections(5)
@@ -44,9 +43,5 @@ async fn main() -> Result<(), impl Error> {
             .expect("Failed to create database connection pool"),
     );
 
-    let state = startup::Container {
-        repository: Arc::new(repository),
-    };
-
-    startup::run(listener, state).await
+    interface::api::runner::run(listener, repository).await
 }
