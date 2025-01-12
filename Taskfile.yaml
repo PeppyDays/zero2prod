@@ -6,7 +6,7 @@ dotenv:
 tasks:
   run:
     cmds:
-      - cargo run | bunyan
+      - cargo run --bin api | bunyan
   container-up:
     cmds:
       - docker compose up -d

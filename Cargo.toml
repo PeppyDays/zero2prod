@@ -8,7 +8,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "api"
-path = "src/main.rs"
+path = "src/api.rs"
 
 [dependencies]
 async-trait = "0.1"
