@@ -32,7 +32,7 @@ async fn main() -> Result<(), impl Error> {
         .await
         .expect("Failed to bind a port");
 
-    let repository = subscription::infrastructure::SqlxRepository::new(
+    let repository = subscription::infrastructure::repository::SqlxRepository::new(
         PgPoolOptions::new()
             .min_connections(5)
             .max_connections(5)

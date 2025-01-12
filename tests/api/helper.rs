@@ -48,7 +48,7 @@ impl TestApp {
             .connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create database connection pool");
-        let repository = infrastructure::SqlxRepository::new(pool.clone());
+        let repository = infrastructure::repository::SqlxRepository::new(pool.clone());
         let command_executor = domain::service::CommandExecutor::new(repository);
 
         // migrate database
