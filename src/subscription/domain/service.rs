@@ -1,113 +1,10 @@
-use std::convert::TryFrom;
 use std::sync::Arc;
 
-use chrono::DateTime;
-use chrono::Utc;
-use uuid::ContextV7;
-use uuid::Timestamp;
-use uuid::Uuid;
-
+use crate::subscription::domain::infrastructure::Repository;
+use crate::subscription::domain::model::Email;
+use crate::subscription::domain::model::Name;
+use crate::subscription::domain::model::Subscriber;
 use crate::subscription::exception::Error;
-
-pub struct Subscriber {
-    id: Uuid,
-    name: Name,
-    email: Email,
-    subscribed_at: DateTime<Utc>,
-}
-
-impl Subscriber {
-    pub fn new(name: Name, email: Email) -> Self {
-        Self {
-            id: Uuid::new_v7(Timestamp::now(ContextV7::new())),
-            name,
-            email,
-            subscribed_at: Utc::now(),
-        }
-    }
-
-    pub fn id(&self) -> &Uuid {
-        &self.id
-    }
-
-    pub fn name(&self) -> &str {
-        self.name.as_ref()
-    }
-
-    pub fn email(&self) -> &str {
-        self.email.as_ref()
-    }
-
-    pub fn subscribed_at(&self) -> &DateTime<Utc> {
-        &self.subscribed_at
-    }
-}
-
-const FORBIDDEN_CHARACTERS: [char; 11] = ['/', '(', ')', '\"', '<', '>', '\\', '{', '}', '?', '%'];
-
-pub struct Name(String);
-
-impl Name {
-    fn validate(name: &str) -> Result<(), Error> {
-        if name.trim().is_empty() {
-            return Err(Error::InvalidAttributes);
-        }
-
-        if name.len() >= 256 {
-            return Err(Error::InvalidAttributes);
-        }
-
-        if name.chars().any(|c| FORBIDDEN_CHARACTERS.contains(&c)) {
-            return Err(Error::InvalidAttributes);
-        }
-
-        Ok(())
-    }
-}
-
-impl TryFrom<String> for Name {
-    type Error = Error;
-
-    fn try_from(name: String) -> Result<Self, Self::Error> {
-        Name::validate(name.as_str()).map(|_| Name(name))
-    }
-}
-
-impl AsRef<str> for Name {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
-
-pub struct Email(String);
-
-impl Email {
-    fn validate(email: &str) -> Result<(), Error> {
-        if email.len() < 5 || !email.contains('@') {
-            return Err(Error::InvalidAttributes);
-        }
-        Ok(())
-    }
-}
-
-impl TryFrom<String> for Email {
-    type Error = Error;
-
-    fn try_from(email: String) -> Result<Self, Self::Error> {
-        Email::validate(email.as_str()).map(|_| Email(email))
-    }
-}
-
-impl AsRef<str> for Email {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
-
-#[async_trait::async_trait]
-pub trait Repository: Send + Sync + 'static {
-    async fn save(&self, subscriber: &Subscriber) -> Result<(), Error>;
-}
 
 pub enum Command {
     Subscribe { name: String, email: String },
@@ -149,12 +46,10 @@ mod tests {
         use fake::faker::internet::en::SafeEmail;
         use fake::Fake;
 
-        use crate::subscription::domain::Command;
-        use crate::subscription::domain::CommandExecutor;
-        use crate::subscription::domain::Email;
-        use crate::subscription::domain::Name;
-        use crate::subscription::domain::Repository;
-        use crate::subscription::domain::Subscriber;
+        use crate::subscription::domain::infrastructure::Repository;
+        use crate::subscription::domain::model::Subscriber;
+        use crate::subscription::domain::service::Command;
+        use crate::subscription::domain::service::CommandExecutor;
         use crate::subscription::exception::Error;
 
         struct FakeRepository {
@@ -172,13 +67,7 @@ mod tests {
         #[async_trait::async_trait]
         impl Repository for FakeRepository {
             async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
-                let subscriber = Subscriber {
-                    id: *subscriber.id(),
-                    name: Name(subscriber.name.as_ref().into()),
-                    email: Email(subscriber.email.as_ref().into()),
-                    subscribed_at: *subscriber.subscribed_at(),
-                };
-                self.subscribers.lock().unwrap().push(subscriber);
+                self.subscribers.lock().unwrap().push(subscriber.clone());
                 Ok(())
             }
         }

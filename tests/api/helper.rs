@@ -49,7 +49,7 @@ impl TestApp {
             .await
             .expect("Failed to create database connection pool");
         let repository = infrastructure::SqlxRepository::new(pool.clone());
-        let command_executor = domain::CommandExecutor::new(repository);
+        let command_executor = domain::service::CommandExecutor::new(repository);
 
         // migrate database
         sqlx::migrate!("./migrations")

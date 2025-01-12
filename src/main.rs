@@ -41,7 +41,7 @@ async fn main() -> Result<(), impl Error> {
             .await
             .expect("Failed to create database connection pool"),
     );
-    let command_executor = subscription::domain::CommandExecutor::new(repository);
+    let command_executor = subscription::domain::service::CommandExecutor::new(repository);
 
     subscription::interface::run(listener, command_executor).await
 }

@@ -16,8 +16,8 @@ use uuid::ContextV7;
 use uuid::Timestamp;
 use uuid::Uuid;
 
-use crate::subscription::domain::Command;
-use crate::subscription::domain::CommandExecutor;
+use crate::subscription::domain::service::Command;
+use crate::subscription::domain::service::CommandExecutor;
 
 #[derive(Clone)]
 pub struct Container {
