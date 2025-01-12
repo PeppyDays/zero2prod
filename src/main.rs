@@ -6,8 +6,7 @@ use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use zero2prod::configuration;
-use zero2prod::infrastructure;
-use zero2prod::interface;
+use zero2prod::subscription;
 use zero2prod::telemetry;
 
 #[tokio::main]
@@ -33,7 +32,7 @@ async fn main() -> Result<(), impl Error> {
         .await
         .expect("Failed to bind a port");
 
-    let repository = infrastructure::repository::SubscriptionSqlxRepository::new(
+    let repository = subscription::infrastructure::SqlxRepository::new(
         PgPoolOptions::new()
             .min_connections(5)
             .max_connections(5)
@@ -42,6 +41,7 @@ async fn main() -> Result<(), impl Error> {
             .await
             .expect("Failed to create database connection pool"),
     );
+    let command_executor = subscription::domain::CommandExecutor::new(repository);
 
-    interface::api::runner::run(listener, repository).await
+    subscription::interface::run(listener, command_executor).await
 }

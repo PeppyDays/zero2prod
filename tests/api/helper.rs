@@ -14,8 +14,9 @@ use sqlx::Postgres;
 use tokio::net::TcpListener;
 use uuid::Uuid;
 use zero2prod::configuration;
-use zero2prod::infrastructure;
-use zero2prod::interface;
+use zero2prod::subscription::domain;
+use zero2prod::subscription::infrastructure;
+use zero2prod::subscription::interface;
 
 pub struct TestApp {
     pub server_address: SocketAddr,
@@ -39,7 +40,7 @@ impl TestApp {
         // initialise randomise database
         TestApp::initialise_database(&configuration).await;
 
-        // Create a database pool
+        // Create dependencies for injection
         let pool = PgPoolOptions::new()
             .min_connections(5)
             .max_connections(5)
@@ -47,7 +48,8 @@ impl TestApp {
             .connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create database connection pool");
-        let repository = infrastructure::repository::SubscriptionSqlxRepository::new(pool.clone());
+        let repository = infrastructure::SqlxRepository::new(pool.clone());
+        let command_executor = domain::CommandExecutor::new(repository);
 
         // migrate database
         sqlx::migrate!("./migrations")
@@ -56,7 +58,7 @@ impl TestApp {
             .expect("Failed to migrate the database");
 
         // Create a server
-        let server = interface::api::runner::run(listener, repository);
+        let server = interface::run(listener, command_executor);
         tokio::spawn(server);
 
         // Create a client

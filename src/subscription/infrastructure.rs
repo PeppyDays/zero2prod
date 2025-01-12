@@ -1,35 +1,36 @@
 use sqlx::Pool;
 use sqlx::Postgres;
 
-use crate::domain::models::Subscriber;
-use crate::domain::repository::SubscriptionRepository;
+use crate::subscription::domain::Repository;
+use crate::subscription::domain::Subscriber;
+use crate::subscription::exception::Error;
 
-pub struct SubscriptionSqlxRepository {
+pub struct SqlxRepository {
     pool: Pool<Postgres>,
 }
 
-impl SubscriptionSqlxRepository {
+impl SqlxRepository {
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait::async_trait]
-impl SubscriptionRepository for SubscriptionSqlxRepository {
+impl Repository for SqlxRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip_all)]
-    async fn save(&self, subscriber: &Subscriber) -> Result<(), String> {
+    async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
         sqlx::query!(
             "INSERT INTO subscriptions (id, name, email, subscribed_at) VALUES ($1, $2, $3, $4)",
-            subscriber.id,
-            subscriber.name,
-            subscriber.email.as_ref(),
-            subscriber.subscribed_at.naive_utc(),
+            subscriber.id(),
+            subscriber.name(),
+            subscriber.email(),
+            subscriber.subscribed_at().naive_utc(),
         )
         .execute(&self.pool)
         .await
         .map_err(|e| {
             tracing::error!("Failed to execute query: {:?}", e);
-            e.to_string()
+            Error::RepositoryOperationFailed
         })?;
 
         Ok(())
