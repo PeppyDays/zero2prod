@@ -1,4 +1,4 @@
-create table subscriptions (
+create table subscribers (
     id uuid primary key,
     email text not null unique,
     name text not null,

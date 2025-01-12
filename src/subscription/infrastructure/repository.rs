@@ -20,7 +20,7 @@ impl Repository for SqlxRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip_all)]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
         sqlx::query!(
-            "INSERT INTO subscriptions (id, name, email, subscribed_at) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO subscribers (id, name, email, subscribed_at) VALUES ($1, $2, $3, $4)",
             subscriber.id(),
             subscriber.name(),
             subscriber.email(),

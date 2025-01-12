@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select name, email from subscriptions",
+  "query": "select name, email from subscribers",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "858dba06e9123cc60d16ab0156356e4e6557f5f96e59755bc510815497c9dfbe"
+  "hash": "bf33dc6ec30c3c6eb7fa7889e6b0b631a66609a2a48c18a6ce3c96e96e7867e1"
 }
