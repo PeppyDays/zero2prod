@@ -58,7 +58,7 @@ impl TestApp {
             .expect("Failed to migrate the database");
 
         // Create a server
-        let server = interface::run(listener, command_executor);
+        let server = interface::runner::run(listener, command_executor);
         tokio::spawn(server);
 
         // Create a client

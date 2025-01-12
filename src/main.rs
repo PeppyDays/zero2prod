@@ -43,5 +43,5 @@ async fn main() -> Result<(), impl Error> {
     );
     let command_executor = subscription::domain::service::CommandExecutor::new(repository);
 
-    subscription::interface::run(listener, command_executor).await
+    subscription::interface::runner::run(listener, command_executor).await
 }
