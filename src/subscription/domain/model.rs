@@ -13,7 +13,7 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
-    pub fn new(name: Name, email: Email) -> Self {
+    pub fn create(name: Name, email: Email) -> Self {
         Self {
             id: Uuid::now_v7(),
             name,

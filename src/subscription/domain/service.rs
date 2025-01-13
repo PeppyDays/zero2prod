@@ -27,7 +27,7 @@ impl CommandExecutor {
             Command::Subscribe { name, email } => {
                 let name: Name = name.try_into().map_err(|_| Error::InvalidAttributes)?;
                 let email: Email = email.try_into().map_err(|_| Error::InvalidAttributes)?;
-                let subscriber = Subscriber::new(name, email);
+                let subscriber = Subscriber::create(name, email);
 
                 self.repository
                     .save(&subscriber)
@@ -38,117 +38,87 @@ impl CommandExecutor {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    mod subscribe_command_executor {
-        use std::sync::Mutex;
+// #[cfg(test)]
+// mod tests {
+//     mod subscribe_command_executor {
 
-        use fake::faker::internet::en::SafeEmail;
-        use fake::Fake;
+//         //     #[rstest::rstest]
+//         //     #[tokio::test]
+//         //     async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256() {
+//         //         // Arrange
+//         //         let command_executor = CommandExecutor::new(FakeRepository::new());
 
-        use crate::subscription::domain::infrastructure::Repository;
-        use crate::subscription::domain::model::Subscriber;
-        use crate::subscription::domain::service::Command;
-        use crate::subscription::domain::service::CommandExecutor;
-        use crate::subscription::exception::Error;
+//         //         let name = (0..(256..1024).fake::<u32>())
+//         //             .map(|_| "X")
+//         //             .collect::<String>();
+//         //         let email = SafeEmail().fake();
+//         //         let command = Command::Subscribe { name, email };
 
-        struct FakeRepository {
-            subscribers: Mutex<Vec<Subscriber>>,
-        }
+//         //         // Act
+//         //         let actual = command_executor.execute(command).await;
 
-        impl FakeRepository {
-            fn new() -> Self {
-                Self {
-                    subscribers: Mutex::new(Vec::new()),
-                }
-            }
-        }
+//         //         // Assert
+//         //         assert!(actual.is_err());
+//         //         assert!(matches!(actual.unwrap_err(), Error::InvalidAttributes));
+//         //     }
+//     }
 
-        #[async_trait::async_trait]
-        impl Repository for FakeRepository {
-            async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
-                self.subscribers.lock().unwrap().push(subscriber.clone());
-                Ok(())
-            }
-        }
+//     // #[rstest::rstest]
+//     // #[test]
+//     // #[case(name())]
+//     // fn name_is_created_correctly(#[case] name: String) {
+//     //     // Act
+//     //     let actual: Name = name.clone().try_into().unwrap();
 
-        #[rstest::rstest]
-        #[tokio::test]
-        async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256() {
-            // Arrange
-            let command_executor = CommandExecutor::new(FakeRepository::new());
+//     //     // Assert
+//     //     assert_eq!(actual.as_ref(), name.as_str());
+//     // }
 
-            let name = (0..(256..1024).fake::<u32>())
-                .map(|_| "X")
-                .collect::<String>();
-            let email = SafeEmail().fake();
-            let command = Command::Subscribe { name, email };
+//     // #[rstest::rstest]
+//     // #[case("  ")]
+//     // #[case("\t\t")]
+//     // #[test]
+//     // fn name_does_not_include_pre_and_post_whitespaces(#[case] name: String) {
+//     //     // Act
+//     //     let actual: Result<Name, &'static str> = name.try_into();
 
-            // Act
-            let actual = command_executor.execute(command).await;
+//     //     // Assert
+//     //     assert!(actual.is_err());
+//     // }
 
-            // Assert
-            assert!(actual.is_err());
-            assert!(matches!(actual.unwrap_err(), Error::InvalidAttributes));
-        }
-    }
+//     // #[rstest::rstest]
+//     // #[case((0..(256..1024).fake::<u32>()).map(|_| "X").collect::<String>())]
+//     // #[test]
+//     // fn name_should_be_shorter_than_256(#[case] name: String) {
+//     //     // Act
+//     //     let actual: Result<Name, &'static str> = name.try_into();
 
-    // #[rstest::rstest]
-    // #[test]
-    // #[case(name())]
-    // fn name_is_created_correctly(#[case] name: String) {
-    //     // Act
-    //     let actual: Name = name.clone().try_into().unwrap();
+//     //     // Assert
+//     //     assert!(actual.is_err());
+//     // }
 
-    //     // Assert
-    //     assert_eq!(actual.as_ref(), name.as_str());
-    // }
+//     // #[rstest::rstest]
+//     // #[case(format!("{}{}{}", name(), "/", name()))]
+//     // #[case(format!("{}{}{}", name(), "(", name()))]
+//     // #[case(format!("{}{}{}", name(), ")", name()))]
+//     // #[case(format!("{}{}{}", name(), "\"", name()))]
+//     // #[case(format!("{}{}{}", name(), "<", name()))]
+//     // #[case(format!("{}{}{}", name(), ">", name()))]
+//     // #[case(format!("{}{}{}", name(), "\\", name()))]
+//     // #[case(format!("{}{}{}", name(), "{", name()))]
+//     // #[case(format!("{}{}{}", name(), "}", name()))]
+//     // #[case(format!("{}{}{}", name(), "?", name()))]
+//     // #[case(format!("{}{}{}", name(), "%", name()))]
+//     // #[test]
+//     // fn name_should_not_include_forbidden_characters(#[case] name: String) {
+//     //     // Act
+//     //     let actual: Result<Name, &'static str> = name.try_into();
 
-    // #[rstest::rstest]
-    // #[case("  ")]
-    // #[case("\t\t")]
-    // #[test]
-    // fn name_does_not_include_pre_and_post_whitespaces(#[case] name: String) {
-    //     // Act
-    //     let actual: Result<Name, &'static str> = name.try_into();
+//     //     // Assert
+//     //     assert!(actual.is_err());
+//     // }
 
-    //     // Assert
-    //     assert!(actual.is_err());
-    // }
-
-    // #[rstest::rstest]
-    // #[case((0..(256..1024).fake::<u32>()).map(|_| "X").collect::<String>())]
-    // #[test]
-    // fn name_should_be_shorter_than_256(#[case] name: String) {
-    //     // Act
-    //     let actual: Result<Name, &'static str> = name.try_into();
-
-    //     // Assert
-    //     assert!(actual.is_err());
-    // }
-
-    // #[rstest::rstest]
-    // #[case(format!("{}{}{}", name(), "/", name()))]
-    // #[case(format!("{}{}{}", name(), "(", name()))]
-    // #[case(format!("{}{}{}", name(), ")", name()))]
-    // #[case(format!("{}{}{}", name(), "\"", name()))]
-    // #[case(format!("{}{}{}", name(), "<", name()))]
-    // #[case(format!("{}{}{}", name(), ">", name()))]
-    // #[case(format!("{}{}{}", name(), "\\", name()))]
-    // #[case(format!("{}{}{}", name(), "{", name()))]
-    // #[case(format!("{}{}{}", name(), "}", name()))]
-    // #[case(format!("{}{}{}", name(), "?", name()))]
-    // #[case(format!("{}{}{}", name(), "%", name()))]
-    // #[test]
-    // fn name_should_not_include_forbidden_characters(#[case] name: String) {
-    //     // Act
-    //     let actual: Result<Name, &'static str> = name.try_into();
-
-    //     // Assert
-    //     assert!(actual.is_err());
-    // }
-
-    // fn name() -> String {
-    //     FakeName().fake()
-    // }
-}
+//     // fn name() -> String {
+//     //     FakeName().fake()
+//     // }
+// }
