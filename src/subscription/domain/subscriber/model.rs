@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use chrono::Utc;
 use uuid::Uuid;
+use validator::ValidateEmail;
 
 use crate::subscription::exception::Error;
 
@@ -84,10 +85,10 @@ pub struct Email(String);
 
 impl Email {
     fn validate(email: &str) -> Result<(), Error> {
-        if email.len() < 5 || !email.contains('@') {
-            return Err(Error::InvalidAttributes);
-        }
-        Ok(())
+        email
+            .validate_email()
+            .then_some(())
+            .ok_or(Error::InvalidAttributes)
     }
 }
 
