@@ -13,13 +13,16 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
-    pub fn new(name: Name, email: Email) -> Self {
-        Self {
+    pub fn create(name: &str, email: &str) -> Result<Self, Error> {
+        let name: Name = name.try_into().map_err(|_| Error::InvalidAttributes)?;
+        let email: Email = email.try_into().map_err(|_| Error::InvalidAttributes)?;
+
+        Ok(Self {
             id: Uuid::now_v7(),
             name,
             email,
             subscribed_at: Utc::now(),
-        }
+        })
     }
 
     pub fn id(&self) -> &Uuid {
@@ -62,11 +65,11 @@ impl Name {
     }
 }
 
-impl TryFrom<String> for Name {
+impl TryFrom<&str> for Name {
     type Error = Error;
 
-    fn try_from(name: String) -> Result<Self, Self::Error> {
-        Name::validate(name.as_str()).map(|_| Name(name))
+    fn try_from(name: &str) -> Result<Self, Self::Error> {
+        Name::validate(name).map(|_| Name(name.into()))
     }
 }
 
@@ -88,11 +91,11 @@ impl Email {
     }
 }
 
-impl TryFrom<String> for Email {
+impl TryFrom<&str> for Email {
     type Error = Error;
 
-    fn try_from(email: String) -> Result<Self, Self::Error> {
-        Email::validate(email.as_str()).map(|_| Email(email))
+    fn try_from(email: &str) -> Result<Self, Self::Error> {
+        Email::validate(email).map(|_| Email(email.into()))
     }
 }
 

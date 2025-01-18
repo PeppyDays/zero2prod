@@ -7,23 +7,25 @@ use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::subscription::domain::service::CommandExecutor;
-use crate::subscription::interface::controller;
+use crate::subscription::domain::subscriber::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
+use crate::subscription::interface::controllers;
 
 #[derive(Clone)]
 pub struct Container {
-    command_executor: CommandExecutor,
+    execute_subscriber_command: ExecuteSubscriberCommand,
 }
 
 impl Container {
-    pub fn new(command_executor: CommandExecutor) -> Self {
-        Self { command_executor }
+    pub fn new(execute_subscriber_command: ExecuteSubscriberCommand) -> Self {
+        Self {
+            execute_subscriber_command,
+        }
     }
 }
 
-impl FromRef<Container> for CommandExecutor {
+impl FromRef<Container> for ExecuteSubscriberCommand {
     fn from_ref(container: &Container) -> Self {
-        container.command_executor.clone()
+        container.execute_subscriber_command.clone()
     }
 }
 
@@ -31,7 +33,7 @@ pub async fn get_router(container: Container) -> Router {
     Router::new()
         .route(
             "/subscriptions",
-            post(controller::post_subscriptions::control),
+            post(controllers::post_subscriptions::control),
         )
         .with_state(container)
         .layer(
@@ -50,5 +52,5 @@ pub async fn get_router(container: Container) -> Router {
                 )
             }),
         )
-        .route("/healthz", get(controller::get_healthz::control))
+        .route("/healthz", get(controllers::get_healthz::control))
 }

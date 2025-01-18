@@ -32,16 +32,20 @@ async fn main() -> Result<(), impl Error> {
         .await
         .expect("Failed to bind a port");
 
-    let repository = subscription::infrastructure::repository::SqlxRepository::new(
-        PgPoolOptions::new()
-            .min_connections(5)
-            .max_connections(5)
-            .acquire_timeout(Duration::from_secs(5))
-            .connect(configuration.database.connection_string().expose_secret())
-            .await
-            .expect("Failed to create database connection pool"),
-    );
-    let command_executor = subscription::domain::service::CommandExecutor::new(repository);
+    let subscriber_repository =
+        subscription::infrastructure::subscriber::repository::SqlxRepository::new(
+            PgPoolOptions::new()
+                .min_connections(5)
+                .max_connections(5)
+                .acquire_timeout(Duration::from_secs(5))
+                .connect(configuration.database.connection_string().expose_secret())
+                .await
+                .expect("Failed to create database connection pool"),
+        );
+    let execute_subscriber_command =
+        subscription::domain::subscriber::service::command::interface::new_execute_command(
+            subscriber_repository,
+        );
 
-    subscription::interface::runner::run(listener, command_executor).await
+    subscription::interface::runner::run(listener, execute_subscriber_command).await
 }

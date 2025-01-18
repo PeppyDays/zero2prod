@@ -1,21 +1,16 @@
-use fake::faker::internet::en::SafeEmail;
-use fake::faker::name::en::Name;
-use fake::Fake;
 use reqwest::header;
 use reqwest::StatusCode;
 
-use crate::helper::TestApp;
+use crate::subscription::domain::subscriber::command::email;
+use crate::subscription::domain::subscriber::command::name;
+use crate::subscription::interface::helper::TestApp;
 
 #[rstest::rstest]
-#[case(name(), email())]
 #[tokio::test]
-async fn subscription_returns_status_200_with_valid_form_data(
-    #[case] name: Option<String>,
-    #[case] email: Option<String>,
-) {
+async fn subscription_returns_status_200_with_valid_form_data(name: String, email: String) {
     // Arrange
     let app = TestApp::new().await;
-    let body = generate_request_body(name.clone(), email.clone());
+    let body = generate_request_body(Some(name.clone()), Some(email.clone()));
 
     // Act
     let response = app
@@ -35,13 +30,13 @@ async fn subscription_returns_status_200_with_valid_form_data(
         .await
         .expect("Failed to fetch saved subscription");
 
-    assert_eq!(saved.name, name.unwrap());
-    assert_eq!(saved.email, email.unwrap());
+    assert_eq!(saved.name, name);
+    assert_eq!(saved.email, email);
 }
 
 #[rstest::rstest]
-#[case(None, email())]
-#[case(name(), None)]
+#[case(None, Some(email()))]
+#[case(Some(name()), None)]
 #[case(None, None)]
 #[tokio::test]
 async fn subscription_returns_status_400_when_mandatory_field_is_missing(
@@ -65,14 +60,6 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
 
     // Assert
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-fn name() -> Option<String> {
-    Some(Name().fake())
-}
-
-fn email() -> Option<String> {
-    Some(SafeEmail().fake())
 }
 
 fn generate_request_body(name: Option<String>, email: Option<String>) -> String {

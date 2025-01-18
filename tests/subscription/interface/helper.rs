@@ -48,8 +48,9 @@ impl TestApp {
             .connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create database connection pool");
-        let repository = infrastructure::repository::SqlxRepository::new(pool.clone());
-        let command_executor = domain::service::CommandExecutor::new(repository);
+        let repository = infrastructure::subscriber::repository::SqlxRepository::new(pool.clone());
+        let execute_subscriber_command =
+            domain::subscriber::service::command::interface::new_execute_command(repository);
 
         // migrate database
         sqlx::migrate!("./migrations")
@@ -58,7 +59,7 @@ impl TestApp {
             .expect("Failed to migrate the database");
 
         // Create a server
-        let server = interface::runner::run(listener, command_executor);
+        let server = interface::runner::run(listener, execute_subscriber_command);
         tokio::spawn(server);
 
         // Create a client

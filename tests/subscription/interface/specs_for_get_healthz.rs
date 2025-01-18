@@ -1,6 +1,6 @@
 use reqwest::Client;
 
-use crate::helper::TestApp;
+use crate::subscription::interface::helper::TestApp;
 
 #[tokio::test]
 async fn health_check_returns_status_200_and_no_content() {

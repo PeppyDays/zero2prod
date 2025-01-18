@@ -1,5 +1,7 @@
+#[derive(Debug)]
 pub enum Error {
     InvalidAttributes,
-    RepositoryOperationFailed,
+    FailedRepositoryOperation,
+    UnmatchedCommand,
     Unexpected,
 }

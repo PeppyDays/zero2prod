@@ -1,10 +1,11 @@
 use sqlx::Pool;
 use sqlx::Postgres;
 
-use crate::subscription::domain::infrastructure::Repository;
-use crate::subscription::domain::model::Subscriber;
+use crate::subscription::domain::subscriber::infrastructure::Repository;
+use crate::subscription::domain::subscriber::model::Subscriber;
 use crate::subscription::exception::Error;
 
+#[derive(Clone)]
 pub struct SqlxRepository {
     pool: Pool<Postgres>,
 }
@@ -30,7 +31,7 @@ impl Repository for SqlxRepository {
         .await
         .map_err(|e| {
             tracing::error!("Failed to execute query: {:?}", e);
-            Error::RepositoryOperationFailed
+            Error::FailedRepositoryOperation
         })?;
 
         Ok(())
