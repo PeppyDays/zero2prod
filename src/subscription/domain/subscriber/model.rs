@@ -49,7 +49,7 @@ const FORBIDDEN_CHARACTERS: [char; 11] = ['/', '(', ')', '\"', '<', '>', '\\', '
 pub struct Name(String);
 
 impl Name {
-    fn validate(name: &str) -> Result<(), Error> {
+    fn parse(name: &str) -> Result<Self, Error> {
         if name.trim().is_empty() {
             return Err(Error::InvalidAttributes);
         }
@@ -62,7 +62,7 @@ impl Name {
             return Err(Error::InvalidAttributes);
         }
 
-        Ok(())
+        Ok(Name(name.into()))
     }
 }
 
@@ -70,7 +70,7 @@ impl TryFrom<&str> for Name {
     type Error = Error;
 
     fn try_from(name: &str) -> Result<Self, Self::Error> {
-        Name::validate(name).map(|_| Name(name.into()))
+        Name::parse(name)
     }
 }
 
@@ -84,10 +84,10 @@ impl AsRef<str> for Name {
 pub struct Email(String);
 
 impl Email {
-    fn validate(email: &str) -> Result<(), Error> {
+    fn parse(email: &str) -> Result<Self, Error> {
         email
             .validate_email()
-            .then_some(())
+            .then_some(Email(email.into()))
             .ok_or(Error::InvalidAttributes)
     }
 }
@@ -96,7 +96,7 @@ impl TryFrom<&str> for Email {
     type Error = Error;
 
     fn try_from(email: &str) -> Result<Self, Self::Error> {
-        Email::validate(email).map(|_| Email(email.into()))
+        Email::parse(email)
     }
 }
 
