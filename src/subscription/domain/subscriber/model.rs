@@ -108,7 +108,7 @@ impl AsRef<str> for Email {
 
 #[cfg(test)]
 mod tests {
-    use fake::faker::internet::ar_sa::SafeEmail;
+    use fake::faker::internet::en::SafeEmail;
     use fake::Fake;
     use rand::rngs::StdRng;
     use rand::SeedableRng;

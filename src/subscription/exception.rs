@@ -2,6 +2,7 @@
 pub enum Error {
     InvalidAttributes,
     FailedRepositoryOperation,
-    UnmatchedCommand,
+    FailedEmailOperation,
+    MismatchedCommand,
     Unexpected,
 }

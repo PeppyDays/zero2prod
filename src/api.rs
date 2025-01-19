@@ -42,9 +42,17 @@ async fn main() -> Result<(), impl Error> {
                 .await
                 .expect("Failed to create database connection pool"),
         );
+    let subscriber_email_client =
+        subscription::infrastructure::subscriber::email_client::FakeEmailClient::new(
+            reqwest::Client::new(),
+            configuration.email_client.host,
+            configuration.email_client.sender,
+            configuration.email_client.token,
+        );
     let execute_subscriber_command =
         subscription::domain::subscriber::service::command::interface::new_execute_command(
             subscriber_repository,
+            subscriber_email_client,
         );
 
     subscription::interface::runner::run(listener, execute_subscriber_command).await

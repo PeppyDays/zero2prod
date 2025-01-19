@@ -7,3 +7,7 @@ database:
   username: newsletter
   password: welcome
   database: newsletter
+email_client:
+  host: 127.0.0.1
+  sender: test@gmail.com
+  token: SECRET_TOKEN

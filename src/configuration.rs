@@ -8,6 +8,7 @@ use secrecy::SecretString;
 pub struct Configuration {
     pub application: ApplicationConfiguration,
     pub database: DatabaseConfiguration,
+    pub email_client: EmailClientConfiguration,
 }
 
 #[derive(serde::Deserialize)]
@@ -36,6 +37,13 @@ impl DatabaseConfiguration {
             self.database,
         ))
     }
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmailClientConfiguration {
+    pub host: String,
+    pub sender: String,
+    pub token: SecretString,
 }
 
 pub enum Environment {

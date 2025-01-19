@@ -48,9 +48,20 @@ impl TestApp {
             .connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create database connection pool");
-        let repository = infrastructure::subscriber::repository::SqlxRepository::new(pool.clone());
+        let subscriber_repository =
+            infrastructure::subscriber::repository::SqlxRepository::new(pool.clone());
+        let subscriber_email_client =
+            infrastructure::subscriber::email_client::FakeEmailClient::new(
+                reqwest::Client::new(),
+                configuration.email_client.host,
+                configuration.email_client.sender,
+                configuration.email_client.token,
+            );
         let execute_subscriber_command =
-            domain::subscriber::service::command::interface::new_execute_command(repository);
+            domain::subscriber::service::command::interface::new_execute_command(
+                subscriber_repository,
+                subscriber_email_client,
+            );
 
         // migrate database
         sqlx::migrate!("./migrations")
