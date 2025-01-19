@@ -1,4 +1,5 @@
 use reqwest::Client;
+use reqwest::StatusCode;
 
 use crate::subscription::interface::helper::TestApp;
 
@@ -16,6 +17,6 @@ async fn health_check_returns_status_200_and_no_content() {
         .expect("Failed to execute request");
 
     // Assert
-    assert!(response.status().is_success());
-    assert_eq!(Some(0), response.content_length());
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.content_length().unwrap(), 0);
 }

@@ -1,3 +1,6 @@
+use claims::assert_err;
+use claims::assert_matches;
+use claims::assert_ok;
 use fake::faker::internet::en::SafeEmail;
 use fake::Fake;
 use zero2prod::subscription::domain::subscriber::service::command::executors::subscribe::Command as SubscribeCommand;
@@ -22,7 +25,7 @@ async fn sut_stores_subscribers_correctly(
     let actual = sut(subscribe_command).await;
 
     // Assert
-    assert!(actual.is_ok());
+    assert_ok!(actual);
 }
 
 #[rstest::rstest]
@@ -42,6 +45,6 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
     let actual = sut(command).await;
 
     // Assert
-    assert!(actual.is_err());
-    assert!(matches!(actual.unwrap_err(), Error::InvalidAttributes));
+    assert_err!(&actual);
+    assert_matches!(&actual.unwrap_err(), Error::InvalidAttributes);
 }
