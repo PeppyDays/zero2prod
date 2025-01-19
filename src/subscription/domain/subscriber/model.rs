@@ -49,7 +49,7 @@ const FORBIDDEN_CHARACTERS: [char; 11] = ['/', '(', ')', '\"', '<', '>', '\\', '
 pub struct Name(String);
 
 impl Name {
-    fn parse(name: &str) -> Result<Self, Error> {
+    pub fn parse(name: &str) -> Result<Self, Error> {
         if name.trim().is_empty() {
             return Err(Error::InvalidAttributes);
         }
@@ -84,7 +84,7 @@ impl AsRef<str> for Name {
 pub struct Email(String);
 
 impl Email {
-    fn parse(email: &str) -> Result<Self, Error> {
+    pub fn parse(email: &str) -> Result<Self, Error> {
         email
             .validate_email()
             .then_some(Email(email.into()))
@@ -103,5 +103,32 @@ impl TryFrom<&str> for Email {
 impl AsRef<str> for Email {
     fn as_ref(&self) -> &str {
         &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use fake::faker::internet::ar_sa::SafeEmail;
+    use fake::Fake;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+
+    use super::*;
+
+    #[derive(Clone, Debug)]
+    struct ValidEmailFixture(String);
+
+    impl quickcheck::Arbitrary for ValidEmailFixture {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let mut rng = StdRng::seed_from_u64(u64::arbitrary(g));
+            let email = SafeEmail().fake_with_rng(&mut rng);
+            Self(email)
+        }
+    }
+
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_correctly(email: ValidEmailFixture) -> bool {
+        dbg!(&email.0);
+        Email::parse(email.0.as_str()).is_ok()
     }
 }
