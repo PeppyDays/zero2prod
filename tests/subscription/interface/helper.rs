@@ -13,6 +13,11 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use tokio::net::TcpListener;
 use uuid::Uuid;
+use wiremock::matchers::method;
+use wiremock::matchers::path;
+use wiremock::Mock;
+use wiremock::MockServer;
+use wiremock::ResponseTemplate;
 use zero2prod::configuration;
 use zero2prod::subscription::domain;
 use zero2prod::subscription::infrastructure;
@@ -50,10 +55,16 @@ impl TestApp {
             .expect("Failed to create database connection pool");
         let subscriber_repository =
             infrastructure::subscriber::repository::SqlxRepository::new(pool.clone());
+        let subscriber_email_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/email"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&subscriber_email_server)
+            .await;
         let subscriber_email_client =
             infrastructure::subscriber::email_client::FakeEmailClient::new(
-                reqwest::Client::new(),
-                configuration.email_client.host,
+                Client::new(),
+                subscriber_email_server.uri(),
                 configuration.email_client.sender,
                 configuration.email_client.token,
             );

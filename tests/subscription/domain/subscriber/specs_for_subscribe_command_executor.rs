@@ -2,7 +2,6 @@ use claims::assert_err;
 use claims::assert_matches;
 use claims::assert_ok;
 use fake::Fake;
-use wiremock::MockServer;
 use zero2prod::subscription::domain::subscriber::service::command::executors::subscribe::Command as SubscribeCommand;
 use zero2prod::subscription::domain::subscriber::service::command::interface::new_execute_command;
 use zero2prod::subscription::domain::subscriber::service::command::interface::Command;
@@ -66,7 +65,7 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
 #[tokio::test]
 async fn sut_sends_sending_email_request_with_authorization_token_to_email_server_correctly(
     #[future(awt)] repository: SqlxRepository,
-    #[future(awt)] email_server_and_client: (MockServer, FakeEmailClient),
+    #[future(awt)] email_server_and_client: (wiremock::MockServer, FakeEmailClient),
     name: String,
     email: String,
 ) {
@@ -94,7 +93,7 @@ async fn sut_sends_sending_email_request_with_authorization_token_to_email_serve
 #[tokio::test]
 async fn sut_sends_sending_email_request_body_to_email_server_correctly(
     #[future(awt)] repository: SqlxRepository,
-    #[future(awt)] email_server_and_client: (MockServer, FakeEmailClient),
+    #[future(awt)] email_server_and_client: (wiremock::MockServer, FakeEmailClient),
     name: String,
     email: String,
 ) {
@@ -122,7 +121,7 @@ async fn sut_sends_sending_email_request_body_to_email_server_correctly(
 #[tokio::test]
 async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_internal_server_error(
     #[future(awt)] repository: SqlxRepository,
-    #[future(awt)] faulty_email_server_and_client: (MockServer, FakeEmailClient),
+    #[future(awt)] faulty_email_server_and_client: (wiremock::MockServer, FakeEmailClient),
     name: String,
     email: String,
 ) {
@@ -142,6 +141,6 @@ fn create_subscribe_command(name: String, email: String) -> Command {
     Command::Subscribe(SubscribeCommand::new(name, email))
 }
 
-async fn extract_first_received_request(email_server: MockServer) -> wiremock::Request {
+async fn extract_first_received_request(email_server: wiremock::MockServer) -> wiremock::Request {
     email_server.received_requests().await.unwrap()[0].clone()
 }

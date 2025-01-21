@@ -5,6 +5,11 @@ use std::time::Duration;
 use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
+use wiremock::matchers::method;
+use wiremock::matchers::path;
+use wiremock::Mock;
+use wiremock::MockServer;
+use wiremock::ResponseTemplate;
 use zero2prod::configuration;
 use zero2prod::subscription;
 use zero2prod::telemetry;
@@ -42,10 +47,16 @@ async fn main() -> Result<(), impl Error> {
                 .await
                 .expect("Failed to create database connection pool"),
         );
+    let subscriber_email_server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/email"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&subscriber_email_server)
+        .await;
     let subscriber_email_client =
         subscription::infrastructure::subscriber::email_client::FakeEmailClient::new(
             reqwest::Client::new(),
-            configuration.email_client.host,
+            subscriber_email_server.uri(),
             configuration.email_client.sender,
             configuration.email_client.token,
         );
