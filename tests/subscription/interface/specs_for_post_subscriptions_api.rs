@@ -1,5 +1,11 @@
+use std::time::Duration;
+
 use reqwest::header;
 use reqwest::StatusCode;
+use wiremock::matchers::method;
+use wiremock::matchers::path;
+use wiremock::Mock;
+use wiremock::ResponseTemplate;
 
 use crate::subscription::domain::subscriber::command::email;
 use crate::subscription::domain::subscriber::command::name;
@@ -60,6 +66,37 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
 
     // Assert
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[rstest::rstest]
+#[tokio::test]
+async fn sut_returns_status_500_when_email_client_does_not_respond_in_3_seconds(
+    name: String,
+    email: String,
+) {
+    // Arrange
+    let app = TestApp::new().await;
+    app.email_server.reset().await;
+    Mock::given(method("POST"))
+        .and(path("/email"))
+        .respond_with(ResponseTemplate::new(StatusCode::OK).set_delay(Duration::from_secs(4)))
+        .mount(&app.email_server)
+        .await;
+
+    let body = generate_request_body(Some(name), Some(email));
+
+    // Act
+    let response = app
+        .http_client
+        .post(app.get_server_request_url("/subscriptions"))
+        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(body)
+        .send()
+        .await
+        .expect("Failed to execute request");
+
+    // Assert
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 }
 
 fn generate_request_body(name: Option<String>, email: Option<String>) -> String {
