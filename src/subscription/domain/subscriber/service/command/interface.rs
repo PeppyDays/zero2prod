@@ -2,15 +2,19 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+use enum_as_inner::EnumAsInner;
+
 use crate::subscription::domain::subscriber::infrastructure::EmailClient;
 use crate::subscription::domain::subscriber::infrastructure::Repository;
 use crate::subscription::domain::subscriber::service::command::executors;
 use crate::subscription::exception::Error;
 
+#[derive(Clone, EnumAsInner)]
 pub enum Command {
     Subscribe(executors::subscribe::Command),
 }
 
+// TODO: Maybe good chance to learn macros with EnumAsInner and From
 impl From<executors::subscribe::Command> for Command {
     fn from(command: executors::subscribe::Command) -> Self {
         Self::Subscribe(command)

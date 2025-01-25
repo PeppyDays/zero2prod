@@ -2,20 +2,22 @@ use claims::assert_err;
 use claims::assert_matches;
 use claims::assert_ok;
 use fake::Fake;
+use zero2prod::subscription::domain::subscriber::model::Subscriber;
 use zero2prod::subscription::domain::subscriber::service::command::executors::subscribe::Command as SubscribeCommand;
 use zero2prod::subscription::domain::subscriber::service::command::interface::new_execute_command;
 use zero2prod::subscription::domain::subscriber::service::command::interface::Command;
 use zero2prod::subscription::exception::Error;
 use zero2prod::subscription::infrastructure::subscriber::email_client::FakeEmailClient;
 use zero2prod::subscription::infrastructure::subscriber::repository::SqlxRepository;
+use zero2prod::subscription::infrastructure::subscriber::repository::SubscriberDataModel;
 
 use crate::subscription::domain::subscriber::command::email;
-use crate::subscription::domain::subscriber::command::name;
 use crate::subscription::domain::subscriber::command::subscribe_command as command;
 use crate::subscription::infrastructure::subscriber::email_client::email_client_double;
 use crate::subscription::infrastructure::subscriber::email_client::email_server_and_client;
 use crate::subscription::infrastructure::subscriber::email_client::faulty_email_server_and_client;
 use crate::subscription::infrastructure::subscriber::email_client::EmailClientDouble;
+use crate::subscription::infrastructure::subscriber::repository::pool;
 use crate::subscription::infrastructure::subscriber::repository::repository;
 
 #[rstest::rstest]
@@ -24,17 +26,23 @@ async fn sut_stores_subscribers_correctly(
     #[future(awt)] repository: SqlxRepository,
     #[future(awt)]
     #[from(email_client_double)]
-    email_client: EmailClientDouble,
+    dummy: EmailClientDouble,
     command: Command,
 ) {
     // Arrange
-    let sut = new_execute_command(repository, email_client);
+    let sut = new_execute_command(repository, dummy);
 
     // Act
-    let actual = sut(command).await;
+    let actual = sut(command.clone()).await;
 
     // Assert
     assert_ok!(actual);
+
+    let name = command.as_subscribe().unwrap().name();
+    let email = command.as_subscribe().unwrap().email();
+    let actual = find_subscriber_by_email(email).await;
+    assert_eq!(actual.name(), name);
+    assert_eq!(actual.email(), email);
 }
 
 #[rstest::rstest]
@@ -43,11 +51,11 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
     #[future(awt)] repository: SqlxRepository,
     #[future(awt)]
     #[from(email_client_double)]
-    email_client: EmailClientDouble,
+    dummy: EmailClientDouble,
     email: String,
 ) {
     // Arrange
-    let sut = new_execute_command(repository, email_client);
+    let sut = new_execute_command(repository, dummy);
     let name = (0..(256..1024).fake::<u32>())
         .map(|_| "X")
         .collect::<String>();
@@ -66,13 +74,11 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
 async fn sut_sends_sending_email_request_with_authorization_token_to_email_server_correctly(
     #[future(awt)] repository: SqlxRepository,
     #[future(awt)] email_server_and_client: (wiremock::MockServer, FakeEmailClient),
-    name: String,
-    email: String,
+    command: Command,
 ) {
     // Arrange
     let (email_server, email_client) = email_server_and_client;
     let sut = new_execute_command(repository, email_client.clone());
-    let command = create_subscribe_command(name, email.clone());
 
     // Act
     let _ = sut(command).await;
@@ -94,23 +100,21 @@ async fn sut_sends_sending_email_request_with_authorization_token_to_email_serve
 async fn sut_sends_sending_email_request_body_to_email_server_correctly(
     #[future(awt)] repository: SqlxRepository,
     #[future(awt)] email_server_and_client: (wiremock::MockServer, FakeEmailClient),
-    name: String,
-    email: String,
+    command: Command,
 ) {
     // Arrange
     let (email_server, email_client) = email_server_and_client;
     let sut = new_execute_command(repository, email_client.clone());
-    let command = create_subscribe_command(name, email.clone());
 
     // Act
-    let _ = sut(command).await;
+    let _ = sut(command.clone()).await;
 
     // Assert
     let request = extract_first_received_request(email_server).await;
     let actual: serde_json::Value = request.body_json().unwrap();
     let expected = serde_json::json!({
         "From": "test@gmail.com",
-        "To": email,
+        "To": command.as_subscribe().unwrap().email(),
         "Subject": "hello!",
         "Content": "click this link: ..",
     });
@@ -122,13 +126,11 @@ async fn sut_sends_sending_email_request_body_to_email_server_correctly(
 async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_internal_server_error(
     #[future(awt)] repository: SqlxRepository,
     #[future(awt)] faulty_email_server_and_client: (wiremock::MockServer, FakeEmailClient),
-    name: String,
-    email: String,
+    command: Command,
 ) {
     // Arrange
     let (_, email_client) = faulty_email_server_and_client;
     let sut = new_execute_command(repository, email_client.clone());
-    let command = create_subscribe_command(name, email.clone());
 
     // Act
     let actual = sut(command).await.unwrap_err();
@@ -139,6 +141,20 @@ async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_i
 
 fn create_subscribe_command(name: String, email: String) -> Command {
     Command::Subscribe(SubscribeCommand::new(name, email))
+}
+
+async fn find_subscriber_by_email(email: &str) -> Subscriber {
+    let pool = pool().await;
+    let row = sqlx::query!(
+        "select id, name, email, subscribed_at from subscribers where email = $1",
+        email,
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    let data_model = SubscriberDataModel::new(row.id, row.name, row.email, row.subscribed_at);
+    data_model.try_into().unwrap()
 }
 
 async fn extract_first_received_request(email_server: wiremock::MockServer) -> wiremock::Request {

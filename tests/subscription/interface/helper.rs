@@ -24,6 +24,8 @@ use zero2prod::subscription::infrastructure;
 use zero2prod::subscription::interface;
 
 pub struct TestApp {
+    // TODO: Need to clean up property names and how to use,
+    // e.g. database_pool now might be changed to repository.pool fixture
     pub server_address: SocketAddr,
     pub database_pool: Pool<Postgres>,
     pub http_client: Client,

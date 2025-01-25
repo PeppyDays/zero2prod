@@ -14,6 +14,15 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
+    pub(crate) fn new(id: Uuid, name: Name, email: Email, subscribed_at: DateTime<Utc>) -> Self {
+        Self {
+            id,
+            name,
+            email,
+            subscribed_at,
+        }
+    }
+
     pub fn create(name: &str, email: &str) -> Result<Self, Error> {
         let name: Name = name.try_into().map_err(|_| Error::InvalidAttributes)?;
         let email: Email = email.try_into().map_err(|_| Error::InvalidAttributes)?;

@@ -3,6 +3,7 @@ use crate::subscription::domain::subscriber::infrastructure::Repository;
 use crate::subscription::domain::subscriber::model::Subscriber;
 use crate::subscription::exception::Error;
 
+#[derive(Clone)]
 pub struct Command {
     name: String,
     email: String,
