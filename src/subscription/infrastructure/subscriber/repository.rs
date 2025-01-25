@@ -3,8 +3,10 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-use crate::subscription::domain::subscriber::infrastructure::Repository;
+use crate::subscription::domain::subscriber::infrastructure::SubscriberRepository;
+use crate::subscription::domain::subscriber::infrastructure::SubscriptionTokenRepository;
 use crate::subscription::domain::subscriber::model::Subscriber;
+use crate::subscription::domain::subscriber::model::SubscriptionToken;
 use crate::subscription::exception::Error;
 
 pub struct SubscriberDataModel {
@@ -68,18 +70,18 @@ impl From<&Subscriber> for SubscriberDataModel {
 }
 
 #[derive(Clone)]
-pub struct SqlxRepository {
+pub struct SqlxSubscriberRepository {
     pool: Pool<Postgres>,
 }
 
-impl SqlxRepository {
+impl SqlxSubscriberRepository {
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait::async_trait]
-impl Repository for SqlxRepository {
+impl SubscriberRepository for SqlxSubscriberRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip_all)]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
         let data_model: SubscriberDataModel = subscriber.into();
@@ -98,6 +100,67 @@ impl Repository for SqlxRepository {
             Error::FailedRepositoryOperation
         })?;
 
+        Ok(())
+    }
+}
+
+pub struct SubscriptionTokenDataModel {
+    subscriber_id: Uuid,
+    token: String,
+}
+
+impl SubscriptionTokenDataModel {
+    pub fn new(subscriber_id: Uuid, token: String) -> Self {
+        Self {
+            subscriber_id,
+            token,
+        }
+    }
+}
+
+impl TryFrom<SubscriptionTokenDataModel> for SubscriptionToken {
+    type Error = Error;
+
+    fn try_from(data_model: SubscriptionTokenDataModel) -> Result<Self, Self::Error> {
+        Ok(SubscriptionToken::new(
+            data_model.subscriber_id,
+            data_model.token,
+        ))
+    }
+}
+
+impl From<&SubscriptionToken> for SubscriptionTokenDataModel {
+    fn from(entity: &SubscriptionToken) -> Self {
+        SubscriptionTokenDataModel::new(*entity.subscriber_id(), entity.token().into())
+    }
+}
+
+#[derive(Clone)]
+pub struct SqlxSubscriptionTokenRepository {
+    pool: Pool<Postgres>,
+}
+
+impl SqlxSubscriptionTokenRepository {
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait::async_trait]
+impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
+    async fn save(&self, subscription_token: &SubscriptionToken) -> Result<(), Error> {
+        let data_model: SubscriptionTokenDataModel = subscription_token.into();
+        sqlx::query!(
+            "INSERT INTO subscription_tokens (subscriber_id, token) VALUES ($1, $2)",
+            data_model.subscriber_id,
+            data_model.token,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to execute query: {:?}", e);
+            Error::FailedRepositoryOperation
+        })?;
         Ok(())
     }
 }

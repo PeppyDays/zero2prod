@@ -6,7 +6,8 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use zero2prod::configuration::get_configuration;
 use zero2prod::configuration::Environment;
-use zero2prod::subscription::infrastructure::subscriber::repository::SqlxRepository;
+use zero2prod::subscription::infrastructure::subscriber::repository::SqlxSubscriberRepository;
+use zero2prod::subscription::infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository;
 
 #[rstest::fixture]
 pub async fn pool() -> Pool<Postgres> {
@@ -22,6 +23,15 @@ pub async fn pool() -> Pool<Postgres> {
 }
 
 #[rstest::fixture]
-pub async fn repository(#[future(awt)] pool: Pool<Postgres>) -> SqlxRepository {
-    SqlxRepository::new(pool)
+pub async fn subscriber_repository(
+    #[future(awt)] pool: Pool<Postgres>,
+) -> SqlxSubscriberRepository {
+    SqlxSubscriberRepository::new(pool)
+}
+
+#[rstest::fixture]
+pub async fn subscription_token_repository(
+    #[future(awt)] pool: Pool<Postgres>,
+) -> SqlxSubscriptionTokenRepository {
+    SqlxSubscriptionTokenRepository::new(pool)
 }

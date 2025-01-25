@@ -5,7 +5,8 @@ use std::sync::Arc;
 use enum_as_inner::EnumAsInner;
 
 use crate::subscription::domain::subscriber::infrastructure::EmailClient;
-use crate::subscription::domain::subscriber::infrastructure::Repository;
+use crate::subscription::domain::subscriber::infrastructure::SubscriberRepository;
+use crate::subscription::domain::subscriber::infrastructure::SubscriptionTokenRepository;
 use crate::subscription::domain::subscriber::service::command::executors;
 use crate::subscription::exception::Error;
 
@@ -25,17 +26,25 @@ pub type ExecuteCommand =
     Arc<dyn Fn(Command) -> Pin<Box<dyn Future<Output = Result<(), Error>> + Send>> + Send + Sync>;
 
 pub fn new_execute_command(
-    repository: impl Repository,
+    subscriber_repository: impl SubscriberRepository,
+    subscription_token_repository: impl SubscriptionTokenRepository,
     email_client: impl EmailClient,
 ) -> ExecuteCommand {
     Arc::new(move |command: Command| {
-        let repository = repository.clone();
+        let subscriber_repository = subscriber_repository.clone();
+        let subscription_token_repository = subscription_token_repository.clone();
         let email_client = email_client.clone();
 
         Box::pin(async move {
             match command {
                 Command::Subscribe(command) => {
-                    executors::subscribe::execute(command, repository, email_client).await
+                    executors::subscribe::execute(
+                        command,
+                        subscriber_repository,
+                        subscription_token_repository,
+                        email_client,
+                    )
+                    .await
                 }
             }
         })

@@ -57,25 +57,29 @@ impl TestApp {
             .await
             .expect("Failed to create database connection pool");
         let subscriber_repository =
-            infrastructure::subscriber::repository::SqlxRepository::new(pool.clone());
-        let subscriber_email_server = MockServer::start().await;
+            infrastructure::subscriber::repository::SqlxSubscriberRepository::new(pool.clone());
+        let subscription_token_repository =
+            infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository::new(
+                pool.clone(),
+            );
+        let email_server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/email"))
             .respond_with(ResponseTemplate::new(200))
-            .mount(&subscriber_email_server)
+            .mount(&email_server)
             .await;
-        let subscriber_email_client =
-            infrastructure::subscriber::email_client::FakeEmailClient::new(
-                Client::new(),
-                subscriber_email_server.uri(),
-                configuration.email_client.sender,
-                configuration.email_client.token,
-                configuration.email_client.timeout,
-            );
+        let email_client = infrastructure::subscriber::email_client::FakeEmailClient::new(
+            Client::new(),
+            email_server.uri(),
+            configuration.email_client.sender,
+            configuration.email_client.token,
+            configuration.email_client.timeout,
+        );
         let execute_subscriber_command =
             domain::subscriber::service::command::interface::new_execute_command(
                 subscriber_repository,
-                subscriber_email_client,
+                subscription_token_repository,
+                email_client,
             );
 
         // migrate database
@@ -96,7 +100,7 @@ impl TestApp {
             server_address,
             database_pool: pool,
             http_client,
-            email_server: subscriber_email_server,
+            email_server,
         }
     }
 

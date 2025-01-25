@@ -135,6 +135,35 @@ pub enum Status {
     Confirmed,
 }
 
+pub struct SubscriptionToken {
+    subscriber_id: Uuid,
+    token: String,
+}
+
+impl SubscriptionToken {
+    pub(crate) fn new(subscriber_id: Uuid, token: String) -> Self {
+        Self {
+            subscriber_id,
+            token,
+        }
+    }
+
+    pub fn create(subscriber_id: Uuid) -> Self {
+        Self {
+            subscriber_id,
+            token: Uuid::now_v7().into(),
+        }
+    }
+
+    pub fn subscriber_id(&self) -> &Uuid {
+        &self.subscriber_id
+    }
+
+    pub fn token(&self) -> &str {
+        &self.token
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use fake::faker::internet::en::SafeEmail;

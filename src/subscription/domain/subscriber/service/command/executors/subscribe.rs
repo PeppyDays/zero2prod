@@ -1,6 +1,8 @@
 use crate::subscription::domain::subscriber::infrastructure::EmailClient;
-use crate::subscription::domain::subscriber::infrastructure::Repository;
+use crate::subscription::domain::subscriber::infrastructure::SubscriberRepository;
+use crate::subscription::domain::subscriber::infrastructure::SubscriptionTokenRepository;
 use crate::subscription::domain::subscriber::model::Subscriber;
+use crate::subscription::domain::subscriber::model::SubscriptionToken;
 use crate::subscription::exception::Error;
 
 #[derive(Clone)]
@@ -25,14 +27,23 @@ impl Command {
 
 pub async fn execute(
     command: Command,
-    repository: impl Repository,
+    subscriber_repository: impl SubscriberRepository,
+    subscription_token_repository: impl SubscriptionTokenRepository,
     email_client: impl EmailClient,
 ) -> Result<(), Error> {
     let subscriber = Subscriber::create(&command.name, &command.email)?;
+    subscriber_repository.save(&subscriber).await?;
 
-    repository.save(&subscriber).await?;
+    let subscription_token = SubscriptionToken::create(*subscriber.id());
+    subscription_token_repository
+        .save(&subscription_token)
+        .await?;
 
     email_client
-        .send(&subscriber, "hello!", "click this link: ..")
+        .send(
+            &subscriber,
+            "hello!",
+            format!("click this link: .. {} ..", subscription_token.token()).as_ref(),
+        )
         .await
 }

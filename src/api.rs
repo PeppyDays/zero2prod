@@ -37,34 +37,39 @@ async fn main() -> Result<(), impl Error> {
         .await
         .expect("Failed to bind a port");
 
+    let pool = PgPoolOptions::new()
+        .min_connections(5)
+        .max_connections(5)
+        .acquire_timeout(Duration::from_secs(5))
+        .connect(configuration.database.connection_string().expose_secret())
+        .await
+        .expect("Failed to create database connection pool");
     let subscriber_repository =
-        subscription::infrastructure::subscriber::repository::SqlxRepository::new(
-            PgPoolOptions::new()
-                .min_connections(5)
-                .max_connections(5)
-                .acquire_timeout(Duration::from_secs(5))
-                .connect(configuration.database.connection_string().expose_secret())
-                .await
-                .expect("Failed to create database connection pool"),
+        subscription::infrastructure::subscriber::repository::SqlxSubscriberRepository::new(
+            pool.clone(),
         );
-    let subscriber_email_server = MockServer::start().await;
+    let subscription_token_repository =
+        subscription::infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository::new(
+            pool.clone(),
+        );
+    let email_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/email"))
         .respond_with(ResponseTemplate::new(200))
-        .mount(&subscriber_email_server)
+        .mount(&email_server)
         .await;
-    let subscriber_email_client =
-        subscription::infrastructure::subscriber::email_client::FakeEmailClient::new(
-            reqwest::Client::new(),
-            subscriber_email_server.uri(),
-            configuration.email_client.sender,
-            configuration.email_client.token,
-            configuration.email_client.timeout,
-        );
+    let email_client = subscription::infrastructure::subscriber::email_client::FakeEmailClient::new(
+        reqwest::Client::new(),
+        email_server.uri(),
+        configuration.email_client.sender,
+        configuration.email_client.token,
+        configuration.email_client.timeout,
+    );
     let execute_subscriber_command =
         subscription::domain::subscriber::service::command::interface::new_execute_command(
             subscriber_repository,
-            subscriber_email_client,
+            subscription_token_repository,
+            email_client,
         );
 
     subscription::interface::runner::run(listener, execute_subscriber_command).await

@@ -1,13 +1,17 @@
 use fake::Fake;
+use uuid::Uuid;
 use zero2prod::subscription::domain::subscriber::model::Status;
 use zero2prod::subscription::domain::subscriber::model::Subscriber;
+use zero2prod::subscription::domain::subscriber::model::SubscriptionToken;
 use zero2prod::subscription::domain::subscriber::service::command::executors::subscribe::Command as SubscribeCommand;
 use zero2prod::subscription::domain::subscriber::service::command::interface::new_execute_command;
 use zero2prod::subscription::domain::subscriber::service::command::interface::Command;
 use zero2prod::subscription::exception::Error;
 use zero2prod::subscription::infrastructure::subscriber::email_client::FakeEmailClient;
-use zero2prod::subscription::infrastructure::subscriber::repository::SqlxRepository;
+use zero2prod::subscription::infrastructure::subscriber::repository::SqlxSubscriberRepository;
+use zero2prod::subscription::infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository;
 use zero2prod::subscription::infrastructure::subscriber::repository::SubscriberDataModel;
+use zero2prod::subscription::infrastructure::subscriber::repository::SubscriptionTokenDataModel;
 
 use crate::subscription::domain::subscriber::command::email;
 use crate::subscription::domain::subscriber::command::subscribe_command as command;
@@ -16,19 +20,21 @@ use crate::subscription::infrastructure::subscriber::email_client::email_server_
 use crate::subscription::infrastructure::subscriber::email_client::faulty_email_server_and_client;
 use crate::subscription::infrastructure::subscriber::email_client::EmailClientDouble;
 use crate::subscription::infrastructure::subscriber::repository::pool;
-use crate::subscription::infrastructure::subscriber::repository::repository;
+use crate::subscription::infrastructure::subscriber::repository::subscriber_repository;
+use crate::subscription::infrastructure::subscriber::repository::subscription_token_repository;
 
 #[rstest::rstest]
 #[tokio::test]
 async fn sut_stores_new_subscribers_correctly(
-    #[future(awt)] repository: SqlxRepository,
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
     #[future(awt)]
     #[from(email_client_double)]
     dummy: EmailClientDouble,
     command: Command,
 ) {
     // Arrange
-    let sut = new_execute_command(repository, dummy);
+    let sut = new_execute_command(subscriber_repository, subscription_token_repository, dummy);
 
     // Act
     let actual = sut(command.clone()).await;
@@ -46,15 +52,39 @@ async fn sut_stores_new_subscribers_correctly(
 
 #[rstest::rstest]
 #[tokio::test]
+async fn sut_generates_token_to_validate_email_address(
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
+    #[future(awt)]
+    #[from(email_client_double)]
+    dummy: EmailClientDouble,
+    command: Command,
+) {
+    // Arrange
+    let sut = new_execute_command(subscriber_repository, subscription_token_repository, dummy);
+
+    // Act
+    let _ = sut(command.clone()).await;
+
+    // Assert
+    let subscriber = find_subscriber_by_email(command.as_subscribe().unwrap().email()).await;
+    let actual = find_subscription_token_by_subscriber_id(subscriber.id()).await;
+    assert_eq!(subscriber.id(), actual.subscriber_id());
+    assert!(!actual.token().is_empty());
+}
+
+#[rstest::rstest]
+#[tokio::test]
 async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
-    #[future(awt)] repository: SqlxRepository,
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
     #[future(awt)]
     #[from(email_client_double)]
     dummy: EmailClientDouble,
     email: String,
 ) {
     // Arrange
-    let sut = new_execute_command(repository, dummy);
+    let sut = new_execute_command(subscriber_repository, subscription_token_repository, dummy);
     let name = (0..(256..1024).fake::<u32>())
         .map(|_| "X")
         .collect::<String>();
@@ -71,13 +101,18 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
 #[rstest::rstest]
 #[tokio::test]
 async fn sut_sends_sending_email_request_with_authorization_token_to_email_server_correctly(
-    #[future(awt)] repository: SqlxRepository,
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
     #[future(awt)] email_server_and_client: (wiremock::MockServer, FakeEmailClient),
     command: Command,
 ) {
     // Arrange
     let (email_server, email_client) = email_server_and_client;
-    let sut = new_execute_command(repository, email_client.clone());
+    let sut = new_execute_command(
+        subscriber_repository,
+        subscription_token_repository,
+        email_client.clone(),
+    );
 
     // Act
     let _ = sut(command).await;
@@ -97,25 +132,32 @@ async fn sut_sends_sending_email_request_with_authorization_token_to_email_serve
 #[rstest::rstest]
 #[tokio::test]
 async fn sut_sends_sending_email_request_body_to_email_server_correctly(
-    #[future(awt)] repository: SqlxRepository,
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
     #[future(awt)] email_server_and_client: (wiremock::MockServer, FakeEmailClient),
     command: Command,
 ) {
     // Arrange
     let (email_server, email_client) = email_server_and_client;
-    let sut = new_execute_command(repository, email_client.clone());
+    let sut = new_execute_command(
+        subscriber_repository,
+        subscription_token_repository,
+        email_client.clone(),
+    );
 
     // Act
     let _ = sut(command.clone()).await;
 
     // Assert
+    let subscriber = find_subscriber_by_email(command.as_subscribe().unwrap().email()).await;
+    let subscription_token = find_subscription_token_by_subscriber_id(subscriber.id()).await;
     let request = extract_first_received_request(email_server).await;
     let actual: serde_json::Value = request.body_json().unwrap();
     let expected = serde_json::json!({
         "From": "test@gmail.com",
         "To": command.as_subscribe().unwrap().email(),
         "Subject": "hello!",
-        "Content": "click this link: ..",
+        "Content": format!("click this link: .. {} ..", subscription_token.token()).as_str(),
     });
     assert_eq!(actual, expected);
 }
@@ -123,13 +165,18 @@ async fn sut_sends_sending_email_request_body_to_email_server_correctly(
 #[rstest::rstest]
 #[tokio::test]
 async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_internal_server_error(
-    #[future(awt)] repository: SqlxRepository,
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
     #[future(awt)] faulty_email_server_and_client: (wiremock::MockServer, FakeEmailClient),
     command: Command,
 ) {
     // Arrange
     let (_, email_client) = faulty_email_server_and_client;
-    let sut = new_execute_command(repository, email_client.clone());
+    let sut = new_execute_command(
+        subscriber_repository,
+        subscription_token_repository,
+        email_client.clone(),
+    );
 
     // Act
     let actual = sut(command).await.unwrap_err();
@@ -154,6 +201,20 @@ async fn find_subscriber_by_email(email: &str) -> Subscriber {
 
     let data_model =
         SubscriberDataModel::new(row.id, row.name, row.email, row.subscribed_at, row.status);
+    data_model.try_into().unwrap()
+}
+
+async fn find_subscription_token_by_subscriber_id(subscriber_id: &Uuid) -> SubscriptionToken {
+    let pool = pool().await;
+    let row = sqlx::query!(
+        "select subscriber_id, token from subscription_tokens where subscriber_id = $1",
+        subscriber_id,
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    let data_model = SubscriptionTokenDataModel::new(row.subscriber_id, row.token);
     data_model.try_into().unwrap()
 }
 
