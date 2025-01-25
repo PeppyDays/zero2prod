@@ -1,5 +1,7 @@
 use chrono::DateTime;
 use chrono::Utc;
+use strum::AsRefStr;
+use strum::EnumString;
 use uuid::Uuid;
 use validator::ValidateEmail;
 
@@ -11,15 +13,23 @@ pub struct Subscriber {
     name: Name,
     email: Email,
     subscribed_at: DateTime<Utc>,
+    status: Status,
 }
 
 impl Subscriber {
-    pub(crate) fn new(id: Uuid, name: Name, email: Email, subscribed_at: DateTime<Utc>) -> Self {
+    pub(crate) fn new(
+        id: Uuid,
+        name: Name,
+        email: Email,
+        subscribed_at: DateTime<Utc>,
+        status: Status,
+    ) -> Self {
         Self {
             id,
             name,
             email,
             subscribed_at,
+            status,
         }
     }
 
@@ -32,6 +42,7 @@ impl Subscriber {
             name,
             email,
             subscribed_at: Utc::now(),
+            status: Status::Confirmed,
         })
     }
 
@@ -49,6 +60,10 @@ impl Subscriber {
 
     pub fn subscribed_at(&self) -> &DateTime<Utc> {
         &self.subscribed_at
+    }
+
+    pub fn status(&self) -> &Status {
+        &self.status
     }
 }
 
@@ -113,6 +128,11 @@ impl AsRef<str> for Email {
     fn as_ref(&self) -> &str {
         &self.0
     }
+}
+
+#[derive(Clone, EnumString, AsRefStr)]
+pub enum Status {
+    Confirmed,
 }
 
 #[cfg(test)]
