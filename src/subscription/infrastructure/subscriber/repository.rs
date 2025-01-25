@@ -12,7 +12,7 @@ pub struct SubscriberDataModel {
     name: String,
     email: String,
     subscribed_at: NaiveDateTime,
-    status: Option<String>,
+    status: String,
 }
 
 impl SubscriberDataModel {
@@ -21,7 +21,7 @@ impl SubscriberDataModel {
         name: String,
         email: String,
         subscribed_at: NaiveDateTime,
-        status: Option<String>,
+        status: String,
     ) -> Self {
         Self {
             id,
@@ -42,7 +42,6 @@ impl TryFrom<SubscriberDataModel> for Subscriber {
         let subscribed_at = data_model.subscribed_at.and_utc();
         let status = data_model
             .status
-            .unwrap_or("Confirmed".into())
             .as_str()
             .try_into()
             .map_err(|_| Error::InvalidAttributes)?;
@@ -63,7 +62,7 @@ impl From<&Subscriber> for SubscriberDataModel {
             name: entity.name().into(),
             email: entity.email().into(),
             subscribed_at: entity.subscribed_at().naive_utc(),
-            status: Some(entity.status().as_ref().into()),
+            status: entity.status().as_ref().into(),
         }
     }
 }
