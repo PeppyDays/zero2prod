@@ -11,3 +11,4 @@ email_client:
   host: 127.0.0.1
   sender: test@gmail.com
   token: SECRET_TOKEN
+  timeout: 3s

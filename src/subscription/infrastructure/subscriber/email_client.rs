@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use reqwest::Client;
 use secrecy::ExposeSecret;
 use secrecy::SecretString;
@@ -12,15 +14,23 @@ pub struct FakeEmailClient {
     host: String,
     sender: String,
     token: SecretString,
+    timeout: Duration,
 }
 
 impl FakeEmailClient {
-    pub fn new(client: Client, host: String, sender: String, token: SecretString) -> Self {
+    pub fn new(
+        client: Client,
+        host: String,
+        sender: String,
+        token: SecretString,
+        timeout: Duration,
+    ) -> Self {
         Self {
             client,
             host,
             sender,
             token,
+            timeout,
         }
     }
 }
@@ -46,6 +56,7 @@ impl EmailClient for FakeEmailClient {
             .post(url)
             .header("X-Postmark-Server-Token", self.token.expose_secret())
             .json(&body)
+            .timeout(self.timeout)
             .send()
             .await
             .map_err(|_e| Error::FailedEmailOperation)?

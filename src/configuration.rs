@@ -1,6 +1,9 @@
+use std::time::Duration;
+
 use config::ConfigError;
 use config::File;
 use config::FileFormat;
+use duration_str::deserialize_duration;
 use secrecy::ExposeSecret;
 use secrecy::SecretString;
 
@@ -44,6 +47,8 @@ pub struct EmailClientConfiguration {
     pub host: String,
     pub sender: String,
     pub token: SecretString,
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub timeout: Duration,
 }
 
 pub enum Environment {

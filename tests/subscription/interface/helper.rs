@@ -27,6 +27,7 @@ pub struct TestApp {
     pub server_address: SocketAddr,
     pub database_pool: Pool<Postgres>,
     pub http_client: Client,
+    pub email_server: MockServer,
 }
 
 impl TestApp {
@@ -67,6 +68,7 @@ impl TestApp {
                 subscriber_email_server.uri(),
                 configuration.email_client.sender,
                 configuration.email_client.token,
+                configuration.email_client.timeout,
             );
         let execute_subscriber_command =
             domain::subscriber::service::command::interface::new_execute_command(
@@ -92,6 +94,7 @@ impl TestApp {
             server_address,
             database_pool: pool,
             http_client,
+            email_server: subscriber_email_server,
         }
     }
 

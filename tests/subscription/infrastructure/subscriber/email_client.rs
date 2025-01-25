@@ -64,6 +64,7 @@ pub async fn email_server_and_client(
         server.uri(),
         configuration.email_client.sender,
         configuration.email_client.token,
+        configuration.email_client.timeout,
     );
 
     (server, client)
@@ -83,6 +84,7 @@ pub async fn faulty_email_server_and_client(
         server.uri(),
         configuration.email_client.sender,
         configuration.email_client.token,
+        configuration.email_client.timeout,
     );
 
     (server, client)

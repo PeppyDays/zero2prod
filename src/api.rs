@@ -59,6 +59,7 @@ async fn main() -> Result<(), impl Error> {
             subscriber_email_server.uri(),
             configuration.email_client.sender,
             configuration.email_client.token,
+            configuration.email_client.timeout,
         );
     let execute_subscriber_command =
         subscription::domain::subscriber::service::command::interface::new_execute_command(
