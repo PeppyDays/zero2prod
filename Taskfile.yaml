@@ -7,12 +7,15 @@ tasks:
   run:
     cmds:
       - cargo run --bin api | bunyan
+  test:
+    cmds:
+      - cargo test -- --test-threads=1
   container-up:
     cmds:
-      - docker compose up -d
+      - docker-compose up -d
   container-down:
     cmds:
-      - docker compose down --remove-orphans --volumes
+      - docker-compose down --remove-orphans --volumes
   database-install-migrator:
     cmds:
       - cargo install sqlx-cli --no-default-features --features rustls,postgres --locked
@@ -33,3 +36,11 @@ tasks:
       BIN: "{{index .MATCH 0}}"
     cmds:
       - docker build -t zero2prod-api --build-arg BIN={{.BIN}} .
+  check-format:
+    desc: "Check if code is well formatted by cargo fmt"
+    cmds:
+      - cargo +nightly fmt --check
+  check-lint:
+    desc: "Check if code is well written by clippy"
+    cmds:
+      - cargo clippy -- -D warnings

@@ -136,15 +136,15 @@ pub enum Status {
 }
 
 pub struct SubscriptionToken {
-    subscriber_id: Uuid,
     token: String,
+    subscriber_id: Uuid,
 }
 
 impl SubscriptionToken {
-    pub(crate) fn new(subscriber_id: Uuid, token: String) -> Self {
+    pub(crate) fn new(token: String, subscriber_id: Uuid) -> Self {
         Self {
-            subscriber_id,
             token,
+            subscriber_id,
         }
     }
 
@@ -155,12 +155,12 @@ impl SubscriptionToken {
         }
     }
 
-    pub fn subscriber_id(&self) -> &Uuid {
-        &self.subscriber_id
-    }
-
     pub fn token(&self) -> &str {
         &self.token
+    }
+
+    pub fn subscriber_id(&self) -> &Uuid {
+        &self.subscriber_id
     }
 }
 

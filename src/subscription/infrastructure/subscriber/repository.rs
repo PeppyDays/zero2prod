@@ -105,15 +105,15 @@ impl SubscriberRepository for SqlxSubscriberRepository {
 }
 
 pub struct SubscriptionTokenDataModel {
-    subscriber_id: Uuid,
     token: String,
+    subscriber_id: Uuid,
 }
 
 impl SubscriptionTokenDataModel {
-    pub fn new(subscriber_id: Uuid, token: String) -> Self {
+    pub fn new(token: String, subscriber_id: Uuid) -> Self {
         Self {
-            subscriber_id,
             token,
+            subscriber_id,
         }
     }
 }
@@ -123,15 +123,15 @@ impl TryFrom<SubscriptionTokenDataModel> for SubscriptionToken {
 
     fn try_from(data_model: SubscriptionTokenDataModel) -> Result<Self, Self::Error> {
         Ok(SubscriptionToken::new(
-            data_model.subscriber_id,
             data_model.token,
+            data_model.subscriber_id,
         ))
     }
 }
 
 impl From<&SubscriptionToken> for SubscriptionTokenDataModel {
     fn from(entity: &SubscriptionToken) -> Self {
-        SubscriptionTokenDataModel::new(*entity.subscriber_id(), entity.token().into())
+        SubscriptionTokenDataModel::new(entity.token().into(), *entity.subscriber_id())
     }
 }
 
@@ -151,9 +151,9 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
     async fn save(&self, subscription_token: &SubscriptionToken) -> Result<(), Error> {
         let data_model: SubscriptionTokenDataModel = subscription_token.into();
         sqlx::query!(
-            "INSERT INTO subscription_tokens (subscriber_id, token) VALUES ($1, $2)",
-            data_model.subscriber_id,
+            "INSERT INTO subscription_tokens (token, subscriber_id) VALUES ($1, $2)",
             data_model.token,
+            data_model.subscriber_id,
         )
         .execute(&self.pool)
         .await

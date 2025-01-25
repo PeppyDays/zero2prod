@@ -214,7 +214,7 @@ async fn find_subscription_token_by_subscriber_id(subscriber_id: &Uuid) -> Subsc
     .await
     .unwrap();
 
-    let data_model = SubscriptionTokenDataModel::new(row.subscriber_id, row.token);
+    let data_model = SubscriptionTokenDataModel::new(row.token, row.subscriber_id);
     data_model.try_into().unwrap()
 }
 

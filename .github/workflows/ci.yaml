@@ -29,7 +29,8 @@ jobs:
           task database-install-migrator
           task database-migrate
       - name: Run tests
-        run: cargo test -- --test-threads=1
+        run: |
+          task test
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -53,6 +54,8 @@ jobs:
           task database-install-migrator
           task database-migrate
       - name: Enforce formatting
-        run: cargo +nightly fmt --check
+        run: |
+          task check-format
       - name: Lint
-        run: cargo clippy -- -D warnings
+        run: |
+          task check-lint
