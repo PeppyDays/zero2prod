@@ -11,7 +11,9 @@ use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
 use zero2prod::configuration;
-use zero2prod::subscription;
+use zero2prod::domain;
+use zero2prod::infrastructure;
+use zero2prod::interface;
 use zero2prod::telemetry;
 
 #[tokio::main]
@@ -45,20 +47,16 @@ async fn main() -> Result<(), impl Error> {
         .await
         .expect("Failed to create database connection pool");
     let subscriber_repository =
-        subscription::infrastructure::subscriber::repository::SqlxSubscriberRepository::new(
-            pool.clone(),
-        );
+        infrastructure::subscriber::repository::SqlxSubscriberRepository::new(pool.clone());
     let subscription_token_repository =
-        subscription::infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository::new(
-            pool.clone(),
-        );
+        infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository::new(pool.clone());
     let email_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/email"))
         .respond_with(ResponseTemplate::new(200))
         .mount(&email_server)
         .await;
-    let email_client = subscription::infrastructure::subscriber::email_client::FakeEmailClient::new(
+    let email_client = infrastructure::subscriber::email_client::FakeEmailClient::new(
         reqwest::Client::new(),
         email_server.uri(),
         configuration.email_client.sender,
@@ -66,11 +64,11 @@ async fn main() -> Result<(), impl Error> {
         configuration.email_client.timeout,
     );
     let execute_subscriber_command =
-        subscription::domain::subscriber::service::command::interface::new_execute_command(
+        domain::subscriber::service::command::interface::new_execute_command(
             subscriber_repository,
             subscription_token_repository,
             email_client,
         );
 
-    subscription::interface::runner::run(listener, execute_subscriber_command).await
+    interface::runner::run(listener, execute_subscriber_command).await
 }

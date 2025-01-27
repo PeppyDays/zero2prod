@@ -1,3 +1,5 @@
 pub mod configuration;
-pub mod subscription;
+pub mod domain;
+pub mod infrastructure;
+pub mod interface;
 pub mod telemetry;

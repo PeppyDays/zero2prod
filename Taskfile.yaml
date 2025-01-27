@@ -9,7 +9,7 @@ tasks:
       - cargo run --bin api | bunyan
   test:
     cmds:
-      - cargo test -- --test-threads=1
+      - cargo test
   container-up:
     cmds:
       - docker-compose up -d
