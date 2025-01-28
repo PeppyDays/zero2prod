@@ -1,20 +1,13 @@
-use reqwest::Client;
 use reqwest::StatusCode;
 
-use crate::interface::helper::TestApp;
+use crate::interface::system::system;
+use crate::interface::system::System;
 
+#[rstest::rstest]
 #[tokio::test]
-async fn health_check_returns_status_200_and_no_content() {
-    // Arrange
-    let app = TestApp::new().await;
-    let client = Client::new();
-
+async fn health_check_returns_status_200_and_no_content(#[future(awt)] system: System) {
     // Act
-    let response = client
-        .get(app.get_server_request_url("/healthz"))
-        .send()
-        .await
-        .expect("Failed to execute request");
+    let response = system.request.get_healthz().await;
 
     // Assert
     assert_eq!(response.status(), StatusCode::OK);

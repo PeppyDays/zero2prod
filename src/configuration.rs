@@ -4,7 +4,6 @@ use config::ConfigError;
 use config::File;
 use config::FileFormat;
 use duration_str::deserialize_duration;
-use secrecy::ExposeSecret;
 use secrecy::SecretString;
 
 #[derive(serde::Deserialize)]
@@ -38,19 +37,6 @@ pub struct DatabaseConnectionConfiguration {
     pub database: String,
     pub username: String,
     pub password: SecretString,
-}
-
-impl DatabaseConfiguration {
-    pub fn connection_string(&self) -> SecretString {
-        SecretString::from(format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.connection.username,
-            self.connection.password.expose_secret(),
-            self.connection.host,
-            self.connection.port,
-            self.connection.database,
-        ))
-    }
 }
 
 #[derive(serde::Deserialize)]
