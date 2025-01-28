@@ -4,9 +4,9 @@ use zero2prod::aggregates::subscriber::domain::exception::Error;
 use zero2prod::aggregates::subscriber::domain::model::Status;
 use zero2prod::aggregates::subscriber::domain::model::Subscriber;
 use zero2prod::aggregates::subscriber::domain::model::SubscriptionToken;
-use zero2prod::aggregates::subscriber::domain::service::command::executors::subscribe::Command as SubscribeCommand;
-use zero2prod::aggregates::subscriber::domain::service::command::interface::new_execute_command;
-use zero2prod::aggregates::subscriber::domain::service::command::interface::Command;
+use zero2prod::aggregates::subscriber::domain::service::new_command_executor;
+use zero2prod::aggregates::subscriber::domain::service::Command;
+use zero2prod::aggregates::subscriber::domain::service::SubscribeCommand;
 use zero2prod::aggregates::subscriber::infrastructure::email_client::FakeEmailClient;
 use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriberRepository;
 use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
@@ -34,7 +34,7 @@ async fn sut_stores_new_subscribers_correctly(
     command: Command,
 ) {
     // Arrange
-    let sut = new_execute_command(subscriber_repository, subscription_token_repository, dummy);
+    let sut = new_command_executor(subscriber_repository, subscription_token_repository, dummy);
 
     // Act
     let actual = sut(command.clone()).await;
@@ -61,7 +61,7 @@ async fn sut_generates_token_to_validate_email_address(
     command: Command,
 ) {
     // Arrange
-    let sut = new_execute_command(subscriber_repository, subscription_token_repository, dummy);
+    let sut = new_command_executor(subscriber_repository, subscription_token_repository, dummy);
 
     // Act
     let _ = sut(command.clone()).await;
@@ -84,7 +84,7 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
     email: String,
 ) {
     // Arrange
-    let sut = new_execute_command(subscriber_repository, subscription_token_repository, dummy);
+    let sut = new_command_executor(subscriber_repository, subscription_token_repository, dummy);
     let name = (0..(256..1024).fake::<u32>())
         .map(|_| "X")
         .collect::<String>();
@@ -108,7 +108,7 @@ async fn sut_sends_sending_email_request_with_authorization_token_to_email_serve
 ) {
     // Arrange
     let (email_server, email_client) = email_server_and_client;
-    let sut = new_execute_command(
+    let sut = new_command_executor(
         subscriber_repository,
         subscription_token_repository,
         email_client.clone(),
@@ -139,7 +139,7 @@ async fn sut_sends_sending_email_request_body_to_email_server_correctly(
 ) {
     // Arrange
     let (email_server, email_client) = email_server_and_client;
-    let sut = new_execute_command(
+    let sut = new_command_executor(
         subscriber_repository,
         subscription_token_repository,
         email_client.clone(),
@@ -172,7 +172,7 @@ async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_i
 ) {
     // Arrange
     let (_, email_client) = faulty_email_server_and_client;
-    let sut = new_execute_command(
+    let sut = new_command_executor(
         subscriber_repository,
         subscription_token_repository,
         email_client.clone(),

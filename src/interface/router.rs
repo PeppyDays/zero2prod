@@ -7,25 +7,25 @@ use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::aggregates::subscriber::domain::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
+use crate::aggregates::subscriber::domain::service::CommandExecutor as SubscriberCommandExecutor;
 use crate::interface::controllers;
 
 #[derive(Clone)]
 pub struct Container {
-    execute_subscriber_command: ExecuteSubscriberCommand,
+    subscriber_command_executor: SubscriberCommandExecutor,
 }
 
 impl Container {
-    pub fn new(execute_subscriber_command: ExecuteSubscriberCommand) -> Self {
+    pub fn new(subscriber_command_executor: SubscriberCommandExecutor) -> Self {
         Self {
-            execute_subscriber_command,
+            subscriber_command_executor,
         }
     }
 }
 
-impl FromRef<Container> for ExecuteSubscriberCommand {
+impl FromRef<Container> for SubscriberCommandExecutor {
     fn from_ref(container: &Container) -> Self {
-        container.execute_subscriber_command.clone()
+        container.subscriber_command_executor.clone()
     }
 }
 

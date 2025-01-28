@@ -22,14 +22,14 @@ impl From<executors::subscribe::Command> for Command {
     }
 }
 
-pub type ExecuteCommand =
+pub type CommandExecutor =
     Arc<dyn Fn(Command) -> Pin<Box<dyn Future<Output = Result<(), Error>> + Send>> + Send + Sync>;
 
-pub fn new_execute_command(
+pub fn new_command_executor(
     subscriber_repository: impl SubscriberRepository,
     subscription_token_repository: impl SubscriptionTokenRepository,
     email_client: impl EmailClient,
-) -> ExecuteCommand {
+) -> CommandExecutor {
     Arc::new(move |command: Command| {
         let subscriber_repository = subscriber_repository.clone();
         let subscription_token_repository = subscription_token_repository.clone();
