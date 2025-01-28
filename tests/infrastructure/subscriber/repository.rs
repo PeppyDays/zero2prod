@@ -17,7 +17,13 @@ pub async fn pool() -> Pool<Postgres> {
         .min_connections(2)
         .max_connections(2)
         .acquire_timeout(Duration::from_secs(5))
-        .connect(configuration.database.connection_string().expose_secret())
+        .connect(
+            configuration
+                .subscriber
+                .database
+                .connection_string()
+                .expose_secret(),
+        )
         .await
         .unwrap()
 }

@@ -37,7 +37,7 @@ impl TestApp {
         // Get configuration
         let mut configuration = configuration::get_configuration(configuration::Environment::Test)
             .expect("Failed to read configuration");
-        configuration.database.database = Uuid::new_v4().to_string();
+        configuration.subscriber.database.connection.database = Uuid::new_v4().to_string();
 
         // Create a listener
         let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
@@ -53,7 +53,13 @@ impl TestApp {
             .min_connections(5)
             .max_connections(5)
             .acquire_timeout(Duration::from_secs(5))
-            .connect(configuration.database.connection_string().expose_secret())
+            .connect(
+                configuration
+                    .subscriber
+                    .database
+                    .connection_string()
+                    .expose_secret(),
+            )
             .await
             .expect("Failed to create database connection pool");
         let subscriber_repository =
@@ -71,9 +77,9 @@ impl TestApp {
         let email_client = infrastructure::subscriber::email_client::FakeEmailClient::new(
             Client::new(),
             email_server.uri(),
-            configuration.email_client.sender,
-            configuration.email_client.token,
-            configuration.email_client.timeout,
+            configuration.subscriber.email.client.sender,
+            configuration.subscriber.email.server.token,
+            configuration.subscriber.email.client.timeout,
         );
         let execute_subscriber_command =
             domain::subscriber::service::command::interface::new_execute_command(
@@ -107,7 +113,7 @@ impl TestApp {
     async fn initialise_database(configuration: &configuration::Configuration) {
         // create a connection to postgres database
         // and create randomised database
-        let original_connection_string = configuration.database.connection_string();
+        let original_connection_string = configuration.subscriber.database.connection_string();
         let (connection_string_without_database, _) = original_connection_string
             .expose_secret()
             .rsplit_once("/")
@@ -118,7 +124,13 @@ impl TestApp {
             .expect("Failed to connect to Postgres");
 
         connection
-            .execute(format!(r#"CREATE DATABASE "{}";"#, configuration.database.database).as_str())
+            .execute(
+                format!(
+                    r#"CREATE DATABASE "{}";"#,
+                    configuration.subscriber.database.connection.database
+                )
+                .as_str(),
+            )
             .await
             .expect("Failed to create database.");
     }

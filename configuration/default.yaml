@@ -1,14 +1,22 @@
 application:
   host: 127.0.0.1
   port: 8080
-database:
-  host: 127.0.0.1
-  port: 15432
-  username: newsletter
-  password: welcome
-  database: newsletter
-email_client:
-  host: 127.0.0.1
-  sender: test@gmail.com
-  token: SECRET_TOKEN
-  timeout: 3s
+subscriber:
+  database:
+    connection:
+      host: 127.0.0.1
+      port: 15432
+      username: newsletter
+      password: welcome
+      database: newsletter
+    pool:
+      min_connections: 5
+      max_connections: 5
+      acquire_timeout: 5s
+  email:
+    server:
+      url: http://127.0.0.1
+      token: SECRET_TOKEN
+    client:
+      sender: test@gmail.com
+      timeout: 3s

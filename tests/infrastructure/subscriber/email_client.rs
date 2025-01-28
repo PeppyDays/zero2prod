@@ -68,9 +68,9 @@ pub async fn email_server_and_client(
     let client = FakeEmailClient::new(
         reqwest::Client::new(),
         server.uri(),
-        configuration.email_client.sender,
-        configuration.email_client.token,
-        configuration.email_client.timeout,
+        configuration.subscriber.email.client.sender,
+        configuration.subscriber.email.server.token,
+        configuration.subscriber.email.client.timeout,
     );
 
     (server, client)
@@ -88,9 +88,9 @@ pub async fn faulty_email_server_and_client(
     let client = FakeEmailClient::new(
         reqwest::Client::new(),
         server.uri(),
-        configuration.email_client.sender,
-        configuration.email_client.token,
-        configuration.email_client.timeout,
+        configuration.subscriber.email.client.sender,
+        configuration.subscriber.email.server.token,
+        configuration.subscriber.email.client.timeout,
     );
 
     (server, client)

@@ -10,8 +10,7 @@ use secrecy::SecretString;
 #[derive(serde::Deserialize)]
 pub struct Configuration {
     pub application: ApplicationConfiguration,
-    pub database: DatabaseConfiguration,
-    pub email_client: EmailClientConfiguration,
+    pub subscriber: SubscriberConfiguration,
 }
 
 #[derive(serde::Deserialize)]
@@ -21,7 +20,19 @@ pub struct ApplicationConfiguration {
 }
 
 #[derive(serde::Deserialize)]
+pub struct SubscriberConfiguration {
+    pub database: DatabaseConfiguration,
+    pub email: EmailConfiguration,
+}
+
+#[derive(serde::Deserialize)]
 pub struct DatabaseConfiguration {
+    pub connection: DatabaseConnectionConfiguration,
+    pub pool: DatabasePoolConfiguration,
+}
+
+#[derive(serde::Deserialize)]
+pub struct DatabaseConnectionConfiguration {
     pub host: String,
     pub port: u16,
     pub database: String,
@@ -33,20 +44,38 @@ impl DatabaseConfiguration {
     pub fn connection_string(&self) -> SecretString {
         SecretString::from(format!(
             "postgres://{}:{}@{}:{}/{}",
-            self.username,
-            self.password.expose_secret(),
-            self.host,
-            self.port,
-            self.database,
+            self.connection.username,
+            self.connection.password.expose_secret(),
+            self.connection.host,
+            self.connection.port,
+            self.connection.database,
         ))
     }
 }
 
 #[derive(serde::Deserialize)]
-pub struct EmailClientConfiguration {
-    pub host: String,
-    pub sender: String,
+pub struct DatabasePoolConfiguration {
+    pub min_connections: u32,
+    pub max_connections: u32,
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub acquire_timeout: Duration,
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmailConfiguration {
+    pub server: EmailServerConfiguration,
+    pub client: EmailClientConfiguration,
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmailServerConfiguration {
+    pub url: String,
     pub token: SecretString,
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmailClientConfiguration {
+    pub sender: String,
     #[serde(deserialize_with = "deserialize_duration")]
     pub timeout: Duration,
 }

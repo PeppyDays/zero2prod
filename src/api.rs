@@ -43,7 +43,13 @@ async fn main() -> Result<(), impl Error> {
         .min_connections(5)
         .max_connections(5)
         .acquire_timeout(Duration::from_secs(5))
-        .connect(configuration.database.connection_string().expose_secret())
+        .connect(
+            configuration
+                .subscriber
+                .database
+                .connection_string()
+                .expose_secret(),
+        )
         .await
         .expect("Failed to create database connection pool");
     let subscriber_repository =
@@ -59,9 +65,9 @@ async fn main() -> Result<(), impl Error> {
     let email_client = infrastructure::subscriber::email_client::FakeEmailClient::new(
         reqwest::Client::new(),
         email_server.uri(),
-        configuration.email_client.sender,
-        configuration.email_client.token,
-        configuration.email_client.timeout,
+        configuration.subscriber.email.client.sender,
+        configuration.subscriber.email.server.token,
+        configuration.subscriber.email.client.timeout,
     );
     let execute_subscriber_command =
         domain::subscriber::service::command::interface::new_execute_command(
