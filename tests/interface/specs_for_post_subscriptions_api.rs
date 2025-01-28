@@ -7,8 +7,8 @@ use wiremock::matchers::path;
 use wiremock::Mock;
 use wiremock::ResponseTemplate;
 
-use crate::domain::subscriber::command::email;
-use crate::domain::subscriber::command::name;
+use crate::aggregates::subscriber::domain::command::email;
+use crate::aggregates::subscriber::domain::command::name;
 use crate::interface::helper::TestApp;
 
 #[rstest::rstest]

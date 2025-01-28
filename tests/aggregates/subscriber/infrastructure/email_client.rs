@@ -7,12 +7,12 @@ use wiremock::matchers::path;
 use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
+use zero2prod::aggregates::subscriber::domain::exception::Error;
+use zero2prod::aggregates::subscriber::domain::infrastructure::EmailClient;
+use zero2prod::aggregates::subscriber::domain::model::Subscriber;
+use zero2prod::aggregates::subscriber::infrastructure::email_client::FakeEmailClient;
 use zero2prod::configuration::get_configuration;
 use zero2prod::configuration::Environment;
-use zero2prod::domain::subscriber::exception::Error;
-use zero2prod::domain::subscriber::infrastructure::EmailClient;
-use zero2prod::domain::subscriber::model::Subscriber;
-use zero2prod::infrastructure::subscriber::email_client::FakeEmailClient;
 
 #[derive(Clone)]
 pub struct EmailClientDouble {

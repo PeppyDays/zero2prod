@@ -1,3 +1,2 @@
-pub mod domain;
-pub mod infrastructure;
+pub mod aggregates;
 mod interface;

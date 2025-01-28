@@ -3,11 +3,11 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-use crate::domain::subscriber::exception::Error;
-use crate::domain::subscriber::infrastructure::SubscriberRepository;
-use crate::domain::subscriber::infrastructure::SubscriptionTokenRepository;
-use crate::domain::subscriber::model::Subscriber;
-use crate::domain::subscriber::model::SubscriptionToken;
+use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::infrastructure::SubscriberRepository;
+use crate::aggregates::subscriber::domain::infrastructure::SubscriptionTokenRepository;
+use crate::aggregates::subscriber::domain::model::Subscriber;
+use crate::aggregates::subscriber::domain::model::SubscriptionToken;
 
 pub struct SubscriberDataModel {
     id: Uuid,

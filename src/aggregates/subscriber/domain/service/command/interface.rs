@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use enum_as_inner::EnumAsInner;
 
-use crate::domain::subscriber::exception::Error;
-use crate::domain::subscriber::infrastructure::EmailClient;
-use crate::domain::subscriber::infrastructure::SubscriberRepository;
-use crate::domain::subscriber::infrastructure::SubscriptionTokenRepository;
-use crate::domain::subscriber::service::command::executors;
+use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::infrastructure::EmailClient;
+use crate::aggregates::subscriber::domain::infrastructure::SubscriberRepository;
+use crate::aggregates::subscriber::domain::infrastructure::SubscriptionTokenRepository;
+use crate::aggregates::subscriber::domain::service::command::executors;
 
 #[derive(Clone, EnumAsInner)]
 pub enum Command {

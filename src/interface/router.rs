@@ -7,7 +7,7 @@ use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::domain::subscriber::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
+use crate::aggregates::subscriber::domain::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
 use crate::interface::controllers;
 
 #[derive(Clone)]

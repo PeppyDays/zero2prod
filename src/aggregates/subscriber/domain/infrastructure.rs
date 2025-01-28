@@ -1,6 +1,6 @@
-use crate::domain::subscriber::exception::Error;
-use crate::domain::subscriber::model::Subscriber;
-use crate::domain::subscriber::model::SubscriptionToken;
+use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::model::Subscriber;
+use crate::aggregates::subscriber::domain::model::SubscriptionToken;
 
 #[async_trait::async_trait]
 pub trait SubscriberRepository: Send + Sync + Clone + 'static {

@@ -3,8 +3,8 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Form;
 
-use crate::domain::subscriber::service::command::executors::subscribe::Command as SubscribeCommand;
-use crate::domain::subscriber::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
+use crate::aggregates::subscriber::domain::service::command::executors::subscribe::Command as SubscribeCommand;
+use crate::aggregates::subscriber::domain::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
 
 #[derive(serde::Deserialize)]
 pub struct Request {

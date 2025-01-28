@@ -4,9 +4,9 @@ use reqwest::Client;
 use secrecy::ExposeSecret;
 use secrecy::SecretString;
 
-use crate::domain::subscriber::exception::Error;
-use crate::domain::subscriber::infrastructure::EmailClient;
-use crate::domain::subscriber::model::Subscriber;
+use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::infrastructure::EmailClient;
+use crate::aggregates::subscriber::domain::model::Subscriber;
 
 #[derive(Clone)]
 pub struct FakeEmailClient {

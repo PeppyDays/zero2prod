@@ -4,10 +4,10 @@ use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriberRepository;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
 use zero2prod::configuration::get_configuration;
 use zero2prod::configuration::Environment;
-use zero2prod::infrastructure::subscriber::repository::SqlxSubscriberRepository;
-use zero2prod::infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository;
 
 #[rstest::fixture]
 pub async fn pool() -> Pool<Postgres> {

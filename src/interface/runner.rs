@@ -2,7 +2,7 @@ use std::error::Error;
 
 use tokio::net::TcpListener;
 
-use crate::domain::subscriber::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
+use crate::aggregates::subscriber::domain::service::command::interface::ExecuteCommand as ExecuteSubscriberCommand;
 use crate::interface::router::get_router;
 use crate::interface::router::Container;
 

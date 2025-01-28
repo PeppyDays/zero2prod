@@ -1,27 +1,27 @@
 use fake::Fake;
 use uuid::Uuid;
-use zero2prod::domain::subscriber::exception::Error;
-use zero2prod::domain::subscriber::model::Status;
-use zero2prod::domain::subscriber::model::Subscriber;
-use zero2prod::domain::subscriber::model::SubscriptionToken;
-use zero2prod::domain::subscriber::service::command::executors::subscribe::Command as SubscribeCommand;
-use zero2prod::domain::subscriber::service::command::interface::new_execute_command;
-use zero2prod::domain::subscriber::service::command::interface::Command;
-use zero2prod::infrastructure::subscriber::email_client::FakeEmailClient;
-use zero2prod::infrastructure::subscriber::repository::SqlxSubscriberRepository;
-use zero2prod::infrastructure::subscriber::repository::SqlxSubscriptionTokenRepository;
-use zero2prod::infrastructure::subscriber::repository::SubscriberDataModel;
-use zero2prod::infrastructure::subscriber::repository::SubscriptionTokenDataModel;
+use zero2prod::aggregates::subscriber::domain::exception::Error;
+use zero2prod::aggregates::subscriber::domain::model::Status;
+use zero2prod::aggregates::subscriber::domain::model::Subscriber;
+use zero2prod::aggregates::subscriber::domain::model::SubscriptionToken;
+use zero2prod::aggregates::subscriber::domain::service::command::executors::subscribe::Command as SubscribeCommand;
+use zero2prod::aggregates::subscriber::domain::service::command::interface::new_execute_command;
+use zero2prod::aggregates::subscriber::domain::service::command::interface::Command;
+use zero2prod::aggregates::subscriber::infrastructure::email_client::FakeEmailClient;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriberRepository;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SubscriberDataModel;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SubscriptionTokenDataModel;
 
-use crate::domain::subscriber::command::email;
-use crate::domain::subscriber::command::subscribe_command as command;
-use crate::infrastructure::subscriber::email_client::email_client_double;
-use crate::infrastructure::subscriber::email_client::email_server_and_client;
-use crate::infrastructure::subscriber::email_client::faulty_email_server_and_client;
-use crate::infrastructure::subscriber::email_client::EmailClientDouble;
-use crate::infrastructure::subscriber::repository::pool;
-use crate::infrastructure::subscriber::repository::subscriber_repository;
-use crate::infrastructure::subscriber::repository::subscription_token_repository;
+use crate::aggregates::subscriber::domain::command::email;
+use crate::aggregates::subscriber::domain::command::subscribe_command as command;
+use crate::aggregates::subscriber::infrastructure::email_client::email_client_double;
+use crate::aggregates::subscriber::infrastructure::email_client::email_server_and_client;
+use crate::aggregates::subscriber::infrastructure::email_client::faulty_email_server_and_client;
+use crate::aggregates::subscriber::infrastructure::email_client::EmailClientDouble;
+use crate::aggregates::subscriber::infrastructure::repository::pool;
+use crate::aggregates::subscriber::infrastructure::repository::subscriber_repository;
+use crate::aggregates::subscriber::infrastructure::repository::subscription_token_repository;
 
 #[rstest::rstest]
 #[tokio::test]

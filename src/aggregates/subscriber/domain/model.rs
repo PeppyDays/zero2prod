@@ -5,7 +5,7 @@ use strum::EnumString;
 use uuid::Uuid;
 use validator::ValidateEmail;
 
-use crate::domain::subscriber::exception::Error;
+use crate::aggregates::subscriber::domain::exception::Error;
 
 #[derive(Clone)]
 pub struct Subscriber {
