@@ -2,9 +2,11 @@ use std::time::Duration;
 
 use reqwest::StatusCode;
 use wiremock::ResponseTemplate;
+use zero2prod::aggregates::subscriber::domain::model::Email;
+use zero2prod::aggregates::subscriber::domain::model::Name;
 
-use crate::aggregates::subscriber::domain::command::email;
-use crate::aggregates::subscriber::domain::command::name;
+use crate::aggregates::subscriber::domain::model::email;
+use crate::aggregates::subscriber::domain::model::name;
 use crate::interface::system::system;
 use crate::interface::system::System;
 
@@ -12,13 +14,13 @@ use crate::interface::system::System;
 #[tokio::test]
 async fn subscription_returns_status_200_with_valid_form_data(
     #[future(awt)] system: System,
-    name: String,
-    email: String,
+    name: Name,
+    email: Email,
 ) {
     // Act
     let response = system
         .request
-        .post_subscriptions(Some(name.clone()), Some(email.clone()))
+        .post_subscriptions(Some(name.as_ref().into()), Some(email.as_ref().into()))
         .await;
 
     // Assert
@@ -30,13 +32,13 @@ async fn subscription_returns_status_200_with_valid_form_data(
         .await
         .expect("Failed to fetch saved subscription");
 
-    assert_eq!(actual.name, name);
-    assert_eq!(actual.email, email);
+    assert_eq!(actual.name, name.as_ref());
+    assert_eq!(actual.email, email.as_ref());
 }
 
 #[rstest::rstest]
-#[case(None, Some(email()))]
-#[case(Some(name()), None)]
+#[case(None, Some(email().as_ref().into()))]
+#[case(Some(name().as_ref().into()), None)]
 #[case(None, None)]
 #[tokio::test]
 async fn subscription_returns_status_400_when_mandatory_field_is_missing(
@@ -55,8 +57,8 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
 #[tokio::test]
 async fn sut_returns_status_500_when_email_client_does_not_respond_in_3_seconds(
     #[future(awt)] system: System,
-    name: String,
-    email: String,
+    name: Name,
+    email: Email,
 ) {
     // Arrange
     system
@@ -69,7 +71,7 @@ async fn sut_returns_status_500_when_email_client_does_not_respond_in_3_seconds(
     // Act
     let response = system
         .request
-        .post_subscriptions(Some(name), Some(email))
+        .post_subscriptions(Some(name.as_ref().into()), Some(email.as_ref().into()))
         .await;
 
     // Assert

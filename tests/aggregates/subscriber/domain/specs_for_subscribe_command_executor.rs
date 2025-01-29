@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use fake::Fake;
 use zero2prod::aggregates::subscriber::domain::exception::Error;
+use zero2prod::aggregates::subscriber::domain::model::Email;
 use zero2prod::aggregates::subscriber::domain::model::Status;
 use zero2prod::aggregates::subscriber::domain::service::new_command_executor;
 use zero2prod::aggregates::subscriber::domain::service::Command;
@@ -10,9 +11,9 @@ use zero2prod::aggregates::subscriber::infrastructure::email_client::FakeEmailCl
 use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriberRepository;
 use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
 
-use crate::aggregates::subscriber::domain::command::email;
 use crate::aggregates::subscriber::domain::command::subscribe_command as command;
 use crate::aggregates::subscriber::domain::command::subscribe_commands as commands;
+use crate::aggregates::subscriber::domain::model::email;
 use crate::aggregates::subscriber::infrastructure::email_client::email_client_double;
 use crate::aggregates::subscriber::infrastructure::email_client::email_server_and_client;
 use crate::aggregates::subscriber::infrastructure::email_client::extract_first_received_request;
@@ -112,14 +113,14 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
     #[future(awt)]
     #[from(email_client_double)]
     dummy: EmailClientDouble,
-    email: String,
+    email: Email,
 ) {
     // Arrange
     let sut = new_command_executor(subscriber_repository, subscription_token_repository, dummy);
     let name = (0..(256..1024).fake::<u32>())
         .map(|_| "X")
         .collect::<String>();
-    let command = Command::from(SubscribeCommand::new(name, email));
+    let command = Command::from(SubscribeCommand::new(name, email.as_ref().into()));
 
     // Act
     let actual = sut(command).await;
