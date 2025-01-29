@@ -110,3 +110,9 @@ pub async fn email_server(
 
     server
 }
+
+pub async fn extract_first_received_request(
+    email_server: wiremock::MockServer,
+) -> wiremock::Request {
+    email_server.received_requests().await.unwrap()[0].clone()
+}

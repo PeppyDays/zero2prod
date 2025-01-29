@@ -1,25 +1,22 @@
 use fake::Fake;
-use uuid::Uuid;
 use zero2prod::aggregates::subscriber::domain::exception::Error;
 use zero2prod::aggregates::subscriber::domain::model::Status;
-use zero2prod::aggregates::subscriber::domain::model::Subscriber;
-use zero2prod::aggregates::subscriber::domain::model::SubscriptionToken;
 use zero2prod::aggregates::subscriber::domain::service::new_command_executor;
 use zero2prod::aggregates::subscriber::domain::service::Command;
 use zero2prod::aggregates::subscriber::domain::service::SubscribeCommand;
 use zero2prod::aggregates::subscriber::infrastructure::email_client::FakeEmailClient;
 use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriberRepository;
 use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
-use zero2prod::aggregates::subscriber::infrastructure::repository::SubscriberDataModel;
-use zero2prod::aggregates::subscriber::infrastructure::repository::SubscriptionTokenDataModel;
 
 use crate::aggregates::subscriber::domain::command::email;
 use crate::aggregates::subscriber::domain::command::subscribe_command as command;
 use crate::aggregates::subscriber::infrastructure::email_client::email_client_double;
 use crate::aggregates::subscriber::infrastructure::email_client::email_server_and_client;
+use crate::aggregates::subscriber::infrastructure::email_client::extract_first_received_request;
 use crate::aggregates::subscriber::infrastructure::email_client::faulty_email_server_and_client;
 use crate::aggregates::subscriber::infrastructure::email_client::EmailClientDouble;
-use crate::aggregates::subscriber::infrastructure::repository::pool;
+use crate::aggregates::subscriber::infrastructure::repository::find_subscriber_by_email;
+use crate::aggregates::subscriber::infrastructure::repository::find_subscription_token_by_subscriber_id;
 use crate::aggregates::subscriber::infrastructure::repository::subscriber_repository;
 use crate::aggregates::subscriber::infrastructure::repository::subscription_token_repository;
 
@@ -47,7 +44,7 @@ async fn sut_stores_new_subscribers_correctly(
     let actual = find_subscriber_by_email(expected_email).await;
     assert_eq!(actual.name(), expected_name);
     assert_eq!(actual.email(), expected_email);
-    assert!(matches!(actual.status(), Status::Confirmed));
+    assert!(matches!(actual.status(), Status::Pending));
 }
 
 #[rstest::rstest]
@@ -88,7 +85,7 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
     let name = (0..(256..1024).fake::<u32>())
         .map(|_| "X")
         .collect::<String>();
-    let command = create_subscribe_command(name, email);
+    let command = Command::from(SubscribeCommand::new(name, email));
 
     // Act
     let actual = sut(command).await;
@@ -183,41 +180,4 @@ async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_i
 
     // Assert
     assert!(matches!(actual, Error::FailedEmailOperation));
-}
-
-fn create_subscribe_command(name: String, email: String) -> Command {
-    Command::Subscribe(SubscribeCommand::new(name, email))
-}
-
-async fn find_subscriber_by_email(email: &str) -> Subscriber {
-    let pool = pool().await;
-    let row = sqlx::query!(
-        "select id, name, email, subscribed_at, status from subscribers where email = $1",
-        email,
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-
-    let data_model =
-        SubscriberDataModel::new(row.id, row.name, row.email, row.subscribed_at, row.status);
-    data_model.try_into().unwrap()
-}
-
-async fn find_subscription_token_by_subscriber_id(subscriber_id: &Uuid) -> SubscriptionToken {
-    let pool = pool().await;
-    let row = sqlx::query!(
-        "select subscriber_id, token from subscription_tokens where subscriber_id = $1",
-        subscriber_id,
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-
-    let data_model = SubscriptionTokenDataModel::new(row.token, row.subscriber_id);
-    data_model.try_into().unwrap()
-}
-
-async fn extract_first_received_request(email_server: wiremock::MockServer) -> wiremock::Request {
-    email_server.received_requests().await.unwrap()[0].clone()
 }

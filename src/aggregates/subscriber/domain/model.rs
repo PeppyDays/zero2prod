@@ -42,7 +42,7 @@ impl Subscriber {
             name,
             email,
             subscribed_at: Utc::now(),
-            status: Status::Confirmed,
+            status: Status::Pending,
         })
     }
 
@@ -132,6 +132,7 @@ impl AsRef<str> for Email {
 
 #[derive(Clone, EnumString, AsRefStr)]
 pub enum Status {
+    Pending,
     Confirmed,
 }
 
