@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use fake::Fake;
 use zero2prod::aggregates::subscriber::domain::exception::Error;
 use zero2prod::aggregates::subscriber::domain::model::Status;
@@ -10,6 +12,7 @@ use zero2prod::aggregates::subscriber::infrastructure::repository::SqlxSubscript
 
 use crate::aggregates::subscriber::domain::command::email;
 use crate::aggregates::subscriber::domain::command::subscribe_command as command;
+use crate::aggregates::subscriber::domain::command::subscribe_commands as commands;
 use crate::aggregates::subscriber::infrastructure::email_client::email_client_double;
 use crate::aggregates::subscriber::infrastructure::email_client::email_server_and_client;
 use crate::aggregates::subscriber::infrastructure::email_client::extract_first_received_request;
@@ -68,6 +71,37 @@ async fn sut_generates_token_to_validate_email_address(
     let actual = find_subscription_token_by_subscriber_id(subscriber.id()).await;
     assert_eq!(subscriber.id(), actual.subscriber_id());
     assert!(!actual.token().is_empty());
+}
+
+#[rstest::rstest]
+#[tokio::test]
+async fn sut_generates_randomised_token_for_each_subscription(
+    #[future(awt)] subscriber_repository: SqlxSubscriberRepository,
+    #[future(awt)] subscription_token_repository: SqlxSubscriptionTokenRepository,
+    #[future(awt)]
+    #[from(email_client_double)]
+    dummy: EmailClientDouble,
+    commands: Vec<Command>,
+) {
+    // Arrange
+    let sut = new_command_executor(subscriber_repository, subscription_token_repository, dummy);
+    let mut tokens = Vec::new();
+
+    // Act
+    for command in commands {
+        let _ = sut(command.clone()).await;
+
+        let subscriber = find_subscriber_by_email(command.as_subscribe().unwrap().email()).await;
+        let token = find_subscription_token_by_subscriber_id(subscriber.id())
+            .await
+            .token()
+            .to_owned();
+        tokens.push(token);
+    }
+
+    // Assert
+    let set_of_tokens: HashSet<_> = HashSet::from_iter(tokens.clone());
+    assert_eq!(set_of_tokens.len(), tokens.len());
 }
 
 #[rstest::rstest]

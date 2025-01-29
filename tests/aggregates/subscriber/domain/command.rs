@@ -10,6 +10,13 @@ pub fn subscribe_command(name: String, email: String) -> Command {
 }
 
 #[rstest::fixture]
+pub fn subscribe_commands(#[default(5)] size: usize) -> Vec<Command> {
+    (0..size)
+        .map(|_| Command::from(SubscribeCommand::new(name(), email())))
+        .collect()
+}
+
+#[rstest::fixture]
 pub fn name() -> String {
     Name().fake()
 }
