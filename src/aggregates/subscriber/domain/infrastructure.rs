@@ -1,15 +1,21 @@
-use crate::aggregates::subscriber::domain::exception::Error;
+use uuid::Uuid;
+
+use crate::aggregates::subscriber::domain::error::Error;
 use crate::aggregates::subscriber::domain::model::Subscriber;
 use crate::aggregates::subscriber::domain::model::SubscriptionToken;
 
 #[async_trait::async_trait]
 pub trait SubscriberRepository: Send + Sync + Clone + 'static {
     async fn save(&self, subscriber: &Subscriber) -> Result<(), Error>;
+    async fn modify_by_id<F>(&self, id: &Uuid, modifier: F) -> Result<(), Error>
+    where
+        F: FnOnce(Subscriber) -> Subscriber + Send + Sync;
 }
 
 #[async_trait::async_trait]
 pub trait SubscriptionTokenRepository: Send + Sync + Clone + 'static {
     async fn save(&self, subscription_token: &SubscriptionToken) -> Result<(), Error>;
+    async fn find_by_token(&self, token: &str) -> Result<Option<SubscriptionToken>, Error>;
 }
 
 #[async_trait::async_trait]

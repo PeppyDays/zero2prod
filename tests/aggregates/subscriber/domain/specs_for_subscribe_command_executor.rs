@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use fake::Fake;
-use zero2prod::aggregates::subscriber::domain::exception::Error;
+use zero2prod::aggregates::subscriber::domain::error::Error;
 use zero2prod::aggregates::subscriber::domain::model::Email;
 use zero2prod::aggregates::subscriber::domain::model::Status;
 use zero2prod::aggregates::subscriber::domain::service::new_command_executor;

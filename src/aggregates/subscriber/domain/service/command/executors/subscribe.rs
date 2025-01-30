@@ -1,4 +1,4 @@
-use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::error::Error;
 use crate::aggregates::subscriber::domain::infrastructure::EmailClient;
 use crate::aggregates::subscriber::domain::infrastructure::SubscriberRepository;
 use crate::aggregates::subscriber::domain::infrastructure::SubscriptionTokenRepository;

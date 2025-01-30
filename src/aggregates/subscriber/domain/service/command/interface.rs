@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use enum_as_inner::EnumAsInner;
 
-use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::error::Error;
 use crate::aggregates::subscriber::domain::infrastructure::EmailClient;
 use crate::aggregates::subscriber::domain::infrastructure::SubscriberRepository;
 use crate::aggregates::subscriber::domain::infrastructure::SubscriptionTokenRepository;
@@ -13,12 +13,19 @@ use crate::aggregates::subscriber::domain::service::command::executors;
 #[derive(Clone, EnumAsInner)]
 pub enum Command {
     Subscribe(executors::subscribe::Command),
+    ConfirmSubscription(executors::confirm_subscription::Command),
 }
 
 // TODO: Maybe good chance to learn macros with EnumAsInner and From
 impl From<executors::subscribe::Command> for Command {
     fn from(command: executors::subscribe::Command) -> Self {
         Self::Subscribe(command)
+    }
+}
+
+impl From<executors::confirm_subscription::Command> for Command {
+    fn from(command: executors::confirm_subscription::Command) -> Self {
+        Self::ConfirmSubscription(command)
     }
 }
 
@@ -43,6 +50,14 @@ pub fn new_command_executor(
                         subscriber_repository,
                         subscription_token_repository,
                         email_client,
+                    )
+                    .await
+                }
+                Command::ConfirmSubscription(command) => {
+                    executors::confirm_subscription::execute(
+                        command,
+                        subscriber_repository,
+                        subscription_token_repository,
                     )
                     .await
                 }

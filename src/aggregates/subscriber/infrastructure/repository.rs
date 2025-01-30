@@ -3,12 +3,13 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::error::Error;
 use crate::aggregates::subscriber::domain::infrastructure::SubscriberRepository;
 use crate::aggregates::subscriber::domain::infrastructure::SubscriptionTokenRepository;
 use crate::aggregates::subscriber::domain::model::Subscriber;
 use crate::aggregates::subscriber::domain::model::SubscriptionToken;
 
+#[derive(Debug)]
 pub struct SubscriberDataModel {
     id: Uuid,
     name: String,
@@ -102,6 +103,56 @@ impl SubscriberRepository for SqlxSubscriberRepository {
 
         Ok(())
     }
+
+    async fn modify_by_id<F>(&self, id: &Uuid, modifier: F) -> Result<(), Error>
+    where
+        F: FnOnce(Subscriber) -> Subscriber + Send + Sync,
+    {
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| Error::FailedRepositoryOperation)?;
+
+        let subscriber = sqlx::query!(
+                "SELECT id, name, email, subscribed_at, status FROM subscribers WHERE id = $1 FOR UPDATE",
+                id,
+            )
+            .fetch_one(&mut *transaction)
+            .await
+            .map(|r| SubscriberDataModel::new(
+                r.id,
+                r.name,
+                r.email,
+                r.subscribed_at,
+                r.status,
+            ))
+            .map_err(|e| {
+                match e {
+                    sqlx::Error::RowNotFound => Error::SubscriberNotFound,
+                    _ => Error::FailedRepositoryOperation,
+                }
+            })?
+            .try_into()?;
+
+        let modified_data_model: SubscriberDataModel = (&modifier(subscriber)).into();
+
+        sqlx::query!(
+            "UPDATE subscribers SET name = $1, email = $2, status = $3 WHERE id = $4",
+            modified_data_model.name,
+            modified_data_model.email,
+            modified_data_model.status,
+            modified_data_model.id,
+        )
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| Error::FailedRepositoryOperation)?;
+
+        transaction
+            .commit()
+            .await
+            .map_err(|_| Error::FailedRepositoryOperation)
+    }
 }
 
 pub struct SubscriptionTokenDataModel {
@@ -162,5 +213,18 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
             Error::FailedRepositoryOperation
         })?;
         Ok(())
+    }
+
+    async fn find_by_token(&self, token: &str) -> Result<Option<SubscriptionToken>, Error> {
+        sqlx::query!(
+            "SELECT token, subscriber_id FROM subscription_tokens WHERE token = $1",
+            token,
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| Error::FailedRepositoryOperation)?
+        .map(|r| SubscriptionTokenDataModel::new(r.token, r.subscriber_id).try_into())
+        .transpose()
+        .map_err(|_| Error::InvalidAttributes)
     }
 }

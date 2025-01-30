@@ -7,7 +7,7 @@ use wiremock::matchers::path;
 use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
-use zero2prod::aggregates::subscriber::domain::exception::Error;
+use zero2prod::aggregates::subscriber::domain::error::Error;
 use zero2prod::aggregates::subscriber::domain::infrastructure::EmailClient;
 use zero2prod::aggregates::subscriber::domain::model::Subscriber;
 use zero2prod::aggregates::subscriber::infrastructure::email_client::FakeEmailClient;

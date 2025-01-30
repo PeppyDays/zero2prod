@@ -5,7 +5,7 @@ use strum::EnumString;
 use uuid::Uuid;
 use validator::ValidateEmail;
 
-use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::error::Error;
 
 #[derive(Clone)]
 pub struct Subscriber {
@@ -44,6 +44,10 @@ impl Subscriber {
             subscribed_at: Utc::now(),
             status: Status::Pending,
         })
+    }
+
+    pub fn confirm(&mut self) {
+        self.status = Status::Confirmed;
     }
 
     pub fn id(&self) -> &Uuid {

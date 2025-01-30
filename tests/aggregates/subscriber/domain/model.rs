@@ -6,6 +6,7 @@ use zero2prod::aggregates::subscriber::domain::model::Email;
 use zero2prod::aggregates::subscriber::domain::model::Name;
 use zero2prod::aggregates::subscriber::domain::model::Subscriber;
 use zero2prod::aggregates::subscriber::domain::model::SubscriptionToken;
+use zero2prod::aggregates::subscriber::infrastructure::repository::SubscriptionTokenDataModel;
 
 #[rstest::fixture]
 pub fn subscriber(name: Name, email: Email) -> Subscriber {
@@ -13,8 +14,13 @@ pub fn subscriber(name: Name, email: Email) -> Subscriber {
 }
 
 #[rstest::fixture]
-pub fn subscription_token(#[default(Uuid::now_v7())] subscriber_id: Uuid) -> SubscriptionToken {
-    SubscriptionToken::create(subscriber_id)
+pub fn subscription_token(
+    #[default(Uuid::now_v7().to_string())] token: String,
+    #[default(Uuid::now_v7())] subscriber_id: Uuid,
+) -> SubscriptionToken {
+    SubscriptionTokenDataModel::new(token, subscriber_id)
+        .try_into()
+        .unwrap()
 }
 
 #[rstest::fixture]

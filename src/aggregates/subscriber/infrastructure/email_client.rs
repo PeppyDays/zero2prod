@@ -4,7 +4,7 @@ use reqwest::Client;
 use secrecy::ExposeSecret;
 use secrecy::SecretString;
 
-use crate::aggregates::subscriber::domain::exception::Error;
+use crate::aggregates::subscriber::domain::error::Error;
 use crate::aggregates::subscriber::domain::infrastructure::EmailClient;
 use crate::aggregates::subscriber::domain::model::Subscriber;
 
