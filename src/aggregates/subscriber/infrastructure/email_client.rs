@@ -59,9 +59,9 @@ impl EmailClient for FakeEmailClient {
             .timeout(self.timeout)
             .send()
             .await
-            .map_err(|_e| Error::FailedEmailOperation)?
+            .map_err(|_e| Error::EmailOperationFailed)?
             .error_for_status()
-            .map_err(|_e| Error::FailedEmailOperation)?;
+            .map_err(|_e| Error::EmailOperationFailed)?;
 
         Ok(())
     }

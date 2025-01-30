@@ -1,10 +1,10 @@
 #[derive(Debug)]
 pub enum Error {
-    InvalidAttributes,
-    MismatchedCommand,
+    InvalidAttribute,
+    CommandMismatched,
     TokenNotFound,
     SubscriberNotFound,
-    FailedRepositoryOperation,
-    FailedEmailOperation,
-    Unexpected,
+    RepositoryOperationFailed,
+    EmailOperationFailed,
+    FailedUnexpectedly,
 }

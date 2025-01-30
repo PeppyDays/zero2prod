@@ -47,7 +47,7 @@ impl TryFrom<SubscriberDataModel> for Subscriber {
             .status
             .as_str()
             .try_into()
-            .map_err(|_| Error::InvalidAttributes)?;
+            .map_err(|_| Error::InvalidAttribute)?;
         Ok(Subscriber::new(
             data_model.id,
             name,
@@ -98,7 +98,7 @@ impl SubscriberRepository for SqlxSubscriberRepository {
         .await
         .map_err(|e| {
             tracing::error!("Failed to execute query: {:?}", e);
-            Error::FailedRepositoryOperation
+            Error::RepositoryOperationFailed
         })?;
 
         Ok(())
@@ -112,7 +112,7 @@ impl SubscriberRepository for SqlxSubscriberRepository {
             .pool
             .begin()
             .await
-            .map_err(|_| Error::FailedRepositoryOperation)?;
+            .map_err(|_| Error::RepositoryOperationFailed)?;
 
         let subscriber = sqlx::query!(
                 "SELECT id, name, email, subscribed_at, status FROM subscribers WHERE id = $1 FOR UPDATE",
@@ -130,7 +130,7 @@ impl SubscriberRepository for SqlxSubscriberRepository {
             .map_err(|e| {
                 match e {
                     sqlx::Error::RowNotFound => Error::SubscriberNotFound,
-                    _ => Error::FailedRepositoryOperation,
+                    _ => Error::RepositoryOperationFailed,
                 }
             })?
             .try_into()?;
@@ -146,12 +146,12 @@ impl SubscriberRepository for SqlxSubscriberRepository {
         )
         .execute(&mut *transaction)
         .await
-        .map_err(|_| Error::FailedRepositoryOperation)?;
+        .map_err(|_| Error::RepositoryOperationFailed)?;
 
         transaction
             .commit()
             .await
-            .map_err(|_| Error::FailedRepositoryOperation)
+            .map_err(|_| Error::RepositoryOperationFailed)
     }
 }
 
@@ -210,7 +210,7 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         .await
         .map_err(|e| {
             tracing::error!("Failed to execute query: {:?}", e);
-            Error::FailedRepositoryOperation
+            Error::RepositoryOperationFailed
         })?;
         Ok(())
     }
@@ -222,9 +222,9 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(|_| Error::FailedRepositoryOperation)?
+        .map_err(|_| Error::RepositoryOperationFailed)?
         .map(|r| SubscriptionTokenDataModel::new(r.token, r.subscriber_id).try_into())
         .transpose()
-        .map_err(|_| Error::InvalidAttributes)
+        .map_err(|_| Error::InvalidAttribute)
     }
 }
