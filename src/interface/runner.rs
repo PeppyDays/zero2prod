@@ -8,7 +8,7 @@ use crate::interface::router::Container;
 
 pub async fn run(
     listener: TcpListener,
-    subscriber_command_executor: SubscriberCommandExecutor,
+    subscriber_command_executor: impl SubscriberCommandExecutor,
 ) -> Result<(), impl Error> {
     let container = Container::new(subscriber_command_executor);
     let app = get_router(container).await;

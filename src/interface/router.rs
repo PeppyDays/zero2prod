@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::extract::FromRef;
 use axum::extract::MatchedPath;
 use axum::http::Request;
@@ -12,18 +14,18 @@ use crate::interface::controllers;
 
 #[derive(Clone)]
 pub struct Container {
-    subscriber_command_executor: SubscriberCommandExecutor,
+    subscriber_command_executor: Arc<dyn SubscriberCommandExecutor>,
 }
 
 impl Container {
-    pub fn new(subscriber_command_executor: SubscriberCommandExecutor) -> Self {
+    pub fn new(subscriber_command_executor: impl SubscriberCommandExecutor) -> Self {
         Self {
-            subscriber_command_executor,
+            subscriber_command_executor: Arc::new(subscriber_command_executor),
         }
     }
 }
 
-impl FromRef<Container> for SubscriberCommandExecutor {
+impl FromRef<Container> for Arc<dyn SubscriberCommandExecutor> {
     fn from_ref(container: &Container) -> Self {
         container.subscriber_command_executor.clone()
     }
@@ -34,6 +36,10 @@ pub async fn get_router(container: Container) -> Router {
         .route(
             "/subscriptions",
             post(controllers::post_subscriptions::control),
+        )
+        .route(
+            "/subscriptions/confirm",
+            get(controllers::get_subscriptions_confirm::control),
         )
         .with_state(container)
         .layer(

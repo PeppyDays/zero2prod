@@ -29,14 +29,26 @@ impl From<executors::confirm_subscription::Command> for Command {
     }
 }
 
-pub type CommandExecutor =
+#[async_trait::async_trait]
+pub trait CommandExecutor: Send + Sync + 'static {
+    async fn execute(&self, command: Command) -> Result<(), Error>;
+}
+
+pub type CommandExecutorFuncion =
     Arc<dyn Fn(Command) -> Pin<Box<dyn Future<Output = Result<(), Error>> + Send>> + Send + Sync>;
+
+#[async_trait::async_trait]
+impl CommandExecutor for CommandExecutorFuncion {
+    async fn execute(&self, command: Command) -> Result<(), Error> {
+        self(command).await
+    }
+}
 
 pub fn new_command_executor(
     subscriber_repository: impl SubscriberRepository,
     subscription_token_repository: impl SubscriptionTokenRepository,
     email_client: impl EmailClient,
-) -> CommandExecutor {
+) -> CommandExecutorFuncion {
     Arc::new(move |command: Command| {
         let subscriber_repository = subscriber_repository.clone();
         let subscription_token_repository = subscription_token_repository.clone();
