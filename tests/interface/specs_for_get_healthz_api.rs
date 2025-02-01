@@ -7,7 +7,7 @@ use crate::interface::system::System;
 #[tokio::test]
 async fn health_check_returns_status_200_and_no_content(#[future(awt)] system: System) {
     // Act
-    let response = system.request.get_healthz().await;
+    let response = system.requestor.get_healthz().await;
 
     // Assert
     assert_eq!(response.status(), StatusCode::OK);

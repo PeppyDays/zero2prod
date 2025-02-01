@@ -19,7 +19,7 @@ async fn subscription_returns_status_200_with_valid_form_data(
 ) {
     // Act
     let response = system
-        .request
+        .requestor
         .post_subscriptions(Some(name.as_ref().into()), Some(email.as_ref().into()))
         .await;
 
@@ -47,7 +47,7 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
     #[case] email: Option<String>,
 ) {
     // Act
-    let response = system.request.post_subscriptions(name, email).await;
+    let response = system.requestor.post_subscriptions(name, email).await;
 
     // Assert
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
@@ -70,7 +70,7 @@ async fn sut_returns_status_500_when_email_client_does_not_respond_in_3_seconds(
 
     // Act
     let response = system
-        .request
+        .requestor
         .post_subscriptions(Some(name.as_ref().into()), Some(email.as_ref().into()))
         .await;
 

@@ -19,13 +19,14 @@ use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
 use zero2prod::aggregates::subscriber;
+use zero2prod::aggregates::subscriber::domain::service::CommandExecutor as SubscriberCommandExecutor;
 use zero2prod::assembly;
 use zero2prod::assembly::get_database_connection_string;
 use zero2prod::configuration;
 use zero2prod::interface;
 
 pub struct System {
-    pub request: SystemRequest,
+    pub requestor: SystemRequestor,
     pub dependencies: SystemDependencies,
 }
 
@@ -99,7 +100,7 @@ impl System {
         let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
             .await
             .unwrap();
-        let request = SystemRequest {
+        let requestor = SystemRequestor {
             url: listener.local_addr().unwrap(),
             client: reqwest::Client::new(),
         };
@@ -112,18 +113,18 @@ impl System {
 
         // Return test system
         System {
-            request,
+            requestor,
             dependencies,
         }
     }
 }
 
-pub struct SystemRequest {
+pub struct SystemRequestor {
     pub url: SocketAddr,
     pub client: reqwest::Client,
 }
 
-impl SystemRequest {
+impl SystemRequestor {
     pub async fn get_healthz(&self) -> Response {
         self.client.get(self.url("/healthz")).send().await.unwrap()
     }
@@ -149,6 +150,15 @@ impl SystemRequest {
             .send()
             .await
             .unwrap()
+    }
+
+    pub async fn get_subscriptions_confirm(&self, token: Option<String>) -> Response {
+        let mut request_builder = self.client.get(self.url("/subscriptions/confirm"));
+        if let Some(token) = token {
+            request_builder = request_builder.query(&[("token", token)])
+        }
+
+        request_builder.send().await.unwrap()
     }
 
     fn url(&self, path: &str) -> String {
@@ -180,4 +190,27 @@ impl SystemDependencies {
 #[rstest::fixture]
 pub async fn system() -> System {
     System::new().await
+}
+
+pub struct SystemSurface {
+    pub requestor: SystemRequestor,
+}
+
+impl SystemSurface {
+    pub async fn new(subscriber_command_executor: impl SubscriberCommandExecutor) -> Self {
+        let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
+            .await
+            .unwrap();
+        let requestor = SystemRequestor {
+            url: listener.local_addr().unwrap(),
+            client: reqwest::Client::new(),
+        };
+
+        tokio::spawn(interface::runner::run(
+            listener,
+            subscriber_command_executor,
+        ));
+
+        SystemSurface { requestor }
+    }
 }
