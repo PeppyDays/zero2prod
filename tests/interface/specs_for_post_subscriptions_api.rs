@@ -2,17 +2,17 @@ use std::time::Duration;
 
 use reqwest::StatusCode;
 use wiremock::ResponseTemplate;
-use zero2prod::aggregates::subscriber::domain::model::Email;
-use zero2prod::aggregates::subscriber::domain::model::Name;
+use zero2prod::subscriber::domain::model::Email;
+use zero2prod::subscriber::domain::model::Name;
 
-use crate::aggregates::subscriber::domain::model::email;
-use crate::aggregates::subscriber::domain::model::name;
 use crate::interface::system::system;
 use crate::interface::system::System;
+use crate::subscriber::domain::model::email;
+use crate::subscriber::domain::model::name;
 
 #[rstest::rstest]
 #[tokio::test]
-async fn subscription_returns_status_200_with_valid_form_data(
+async fn subscription_returns_status_ok_with_valid_form_data(
     #[future(awt)] system: System,
     name: Name,
     email: Email,
@@ -41,7 +41,7 @@ async fn subscription_returns_status_200_with_valid_form_data(
 #[case(Some(name().as_ref().into()), None)]
 #[case(None, None)]
 #[tokio::test]
-async fn subscription_returns_status_400_when_mandatory_field_is_missing(
+async fn subscription_returns_status_unprocessable_entity_when_mandatory_field_is_missing(
     #[future(awt)] system: System,
     #[case] name: Option<String>,
     #[case] email: Option<String>,
@@ -55,7 +55,7 @@ async fn subscription_returns_status_400_when_mandatory_field_is_missing(
 
 #[rstest::rstest]
 #[tokio::test]
-async fn sut_returns_status_500_when_email_client_does_not_respond_in_3_seconds(
+async fn sut_returns_status_internal_server_error_when_email_client_does_not_respond_in_3_seconds(
     #[future(awt)] system: System,
     name: Name,
     email: Email,

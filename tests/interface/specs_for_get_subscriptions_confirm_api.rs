@@ -1,13 +1,13 @@
 use reqwest::StatusCode;
-use zero2prod::aggregates::subscriber::domain::error::Error;
-use zero2prod::aggregates::subscriber::domain::service::ConfirmSubscriptionCommand;
+use zero2prod::subscriber::domain::error::Error;
+use zero2prod::subscriber::domain::service::ConfirmSubscriptionCommand;
 
-use crate::aggregates::subscriber::domain::command::command_executor_spy;
-use crate::aggregates::subscriber::domain::command::faulty_command_executor_stub;
-use crate::aggregates::subscriber::domain::command::CommandExecutorSpy;
-use crate::aggregates::subscriber::domain::command::CommandExecutorStub;
-use crate::aggregates::subscriber::domain::model::token;
 use crate::interface::system::SystemSurface;
+use crate::subscriber::domain::model::token;
+use crate::subscriber::domain::service::command_executor_spy;
+use crate::subscriber::domain::service::faulty_command_executor_stub;
+use crate::subscriber::domain::service::CommandExecutorSpy;
+use crate::subscriber::domain::service::CommandExecutorStub;
 
 #[rstest::rstest]
 #[tokio::test]

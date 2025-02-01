@@ -13,15 +13,15 @@ use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
 
-use crate::aggregates::subscriber::domain::infrastructure::EmailClient;
-use crate::aggregates::subscriber::domain::infrastructure::SubscriberRepository;
-use crate::aggregates::subscriber::domain::infrastructure::SubscriptionTokenRepository;
-use crate::aggregates::subscriber::infrastructure::email_client::FakeEmailClient;
-use crate::aggregates::subscriber::infrastructure::repository::SqlxSubscriberRepository;
-use crate::aggregates::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
 use crate::configuration::ApplicationConfiguration;
 use crate::configuration::DatabaseConfiguration;
 use crate::configuration::EmailConfiguration;
+use crate::subscriber::domain::infrastructure::EmailClient;
+use crate::subscriber::domain::infrastructure::SubscriberRepository;
+use crate::subscriber::domain::infrastructure::SubscriptionTokenRepository;
+use crate::subscriber::infrastructure::email_client::FakeEmailClient;
+use crate::subscriber::infrastructure::repository::SqlxSubscriberRepository;
+use crate::subscriber::infrastructure::repository::SqlxSubscriptionTokenRepository;
 
 pub async fn get_application_listener(c: &ApplicationConfiguration) -> TcpListener {
     TcpListener::bind(SocketAddrV4::new(

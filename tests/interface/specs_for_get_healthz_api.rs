@@ -5,7 +5,7 @@ use crate::interface::system::System;
 
 #[rstest::rstest]
 #[tokio::test]
-async fn health_check_returns_status_200_and_no_content(#[future(awt)] system: System) {
+async fn health_check_returns_status_ok_and_no_content(#[future(awt)] system: System) {
     // Act
     let response = system.requestor.get_healthz().await;
 

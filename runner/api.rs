@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use zero2prod::aggregates::subscriber;
 use zero2prod::assembly;
 use zero2prod::configuration;
 use zero2prod::interface;
+use zero2prod::subscriber;
 use zero2prod::telemetry;
 
 #[tokio::main]
@@ -42,5 +42,5 @@ async fn main() -> Result<(), impl Error> {
     );
 
     // Run this application
-    interface::runner::run(listener, subscriber_command_executor).await
+    interface::run(listener, subscriber_command_executor).await
 }

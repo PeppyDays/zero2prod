@@ -1,2 +1,2 @@
-pub mod aggregates;
 mod interface;
+pub mod subscriber;

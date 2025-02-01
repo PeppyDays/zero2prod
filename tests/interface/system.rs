@@ -18,12 +18,11 @@ use wiremock::matchers::path;
 use wiremock::Mock;
 use wiremock::MockServer;
 use wiremock::ResponseTemplate;
-use zero2prod::aggregates::subscriber;
-use zero2prod::aggregates::subscriber::domain::service::CommandExecutor as SubscriberCommandExecutor;
 use zero2prod::assembly;
 use zero2prod::assembly::get_database_connection_string;
 use zero2prod::configuration;
 use zero2prod::interface;
+use zero2prod::subscriber;
 
 pub struct System {
     pub requestor: SystemRequestor,
@@ -106,10 +105,7 @@ impl System {
         };
 
         // Run a server
-        tokio::spawn(interface::runner::run(
-            listener,
-            subscriber_command_executor,
-        ));
+        tokio::spawn(interface::run(listener, subscriber_command_executor));
 
         // Return test system
         System {
@@ -197,7 +193,9 @@ pub struct SystemSurface {
 }
 
 impl SystemSurface {
-    pub async fn new(subscriber_command_executor: impl SubscriberCommandExecutor) -> Self {
+    pub async fn new(
+        subscriber_command_executor: impl subscriber::domain::service::CommandExecutor,
+    ) -> Self {
         let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
             .await
             .unwrap();
@@ -206,10 +204,7 @@ impl SystemSurface {
             client: reqwest::Client::new(),
         };
 
-        tokio::spawn(interface::runner::run(
-            listener,
-            subscriber_command_executor,
-        ));
+        tokio::spawn(interface::run(listener, subscriber_command_executor));
 
         SystemSurface { requestor }
     }
