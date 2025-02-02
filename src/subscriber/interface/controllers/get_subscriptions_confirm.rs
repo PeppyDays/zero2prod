@@ -9,11 +9,12 @@ use crate::subscriber::domain::error::Error;
 use crate::subscriber::domain::service::CommandExecutor;
 use crate::subscriber::domain::service::ConfirmSubscriptionCommand;
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct Request {
     token: String,
 }
 
+#[tracing::instrument(name = "Confirming subscription", skip_all, fields(request = ?request))]
 pub async fn control(
     State(subscriber_command_executor): State<Arc<dyn CommandExecutor>>,
     Query(request): Query<Request>,

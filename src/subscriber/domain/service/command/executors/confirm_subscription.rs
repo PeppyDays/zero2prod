@@ -2,7 +2,7 @@ use crate::subscriber::domain::error::Error;
 use crate::subscriber::domain::infrastructure::SubscriberRepository;
 use crate::subscriber::domain::infrastructure::SubscriptionTokenRepository;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Command {
     token: String,
 }
@@ -17,6 +17,7 @@ impl Command {
     }
 }
 
+#[tracing::instrument(name = "Executing confirm subscription command", skip_all, fields(command = ?command))]
 pub async fn execute(
     command: Command,
     subscriber_repository: impl SubscriberRepository,

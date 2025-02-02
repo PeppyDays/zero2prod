@@ -83,18 +83,10 @@ impl CommandExecutorStub {
 #[async_trait::async_trait]
 impl CommandExecutor for CommandExecutorStub {
     async fn execute(&self, _: Command) -> Result<(), Error> {
-        match &*self.error {
-            Some(error) => match error {
-                Error::InvalidAttribute => Err(Error::InvalidAttribute),
-                Error::CommandMismatched => Err(Error::CommandMismatched),
-                Error::TokenNotFound => Err(Error::TokenNotFound),
-                Error::SubscriberNotFound => Err(Error::SubscriberNotFound),
-                Error::RepositoryOperationFailed => Err(Error::RepositoryOperationFailed),
-                Error::EmailOperationFailed => Err(Error::EmailOperationFailed),
-                Error::FailedUnexpectedly => Err(Error::FailedUnexpectedly),
-            },
-            None => Ok(()),
+        if let Some(error) = &*self.error {
+            return Err(error.clone());
         }
+        Ok(())
     }
 }
 

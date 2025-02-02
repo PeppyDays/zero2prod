@@ -7,7 +7,7 @@ use validator::ValidateEmail;
 
 use crate::subscriber::domain::error::Error;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Subscriber {
     id: Uuid,
     name: Name,
@@ -73,7 +73,7 @@ impl Subscriber {
 
 const FORBIDDEN_CHARACTERS: [char; 11] = ['/', '(', ')', '\"', '<', '>', '\\', '{', '}', '?', '%'];
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Name(String);
 
 impl Name {
@@ -108,7 +108,7 @@ impl AsRef<str> for Name {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Email(String);
 
 impl Email {
@@ -134,12 +134,13 @@ impl AsRef<str> for Email {
     }
 }
 
-#[derive(Clone, EnumString, AsRefStr)]
+#[derive(Clone, Debug, EnumString, AsRefStr)]
 pub enum Status {
     Pending,
     Confirmed,
 }
 
+#[derive(Clone, Debug)]
 pub struct SubscriptionToken {
     token: String,
     subscriber_id: Uuid,

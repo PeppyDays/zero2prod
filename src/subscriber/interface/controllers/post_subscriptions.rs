@@ -8,13 +8,13 @@ use axum::Form;
 use crate::subscriber::domain::service::CommandExecutor as SubscriberCommandExecutor;
 use crate::subscriber::domain::service::SubscribeCommand;
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct Request {
     name: String,
     email: String,
 }
 
-#[tracing::instrument(name = "Adding a new subscriber", skip_all, fields(email = %request.email))]
+#[tracing::instrument(name = "Adding a new subscriber", skip_all, fields(request = ?request))]
 pub async fn control(
     State(subscriber_command_executor): State<Arc<dyn SubscriberCommandExecutor>>,
     Form(request): Form<Request>,

@@ -83,7 +83,7 @@ impl SqlxSubscriberRepository {
 
 #[async_trait::async_trait]
 impl SubscriberRepository for SqlxSubscriberRepository {
-    #[tracing::instrument(name = "Saving subscriber details", skip_all)]
+    #[tracing::instrument(name = "Saving subscriber", skip_all, fields(subscriber = ?subscriber))]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
         let data_model: SubscriberDataModel = subscriber.into();
         sqlx::query!(
@@ -104,6 +104,7 @@ impl SubscriberRepository for SqlxSubscriberRepository {
         Ok(())
     }
 
+    #[tracing::instrument(name = "Modifying subscriber", skip_all, fields(id = ?id))]
     async fn modify_by_id<F>(&self, id: &Uuid, modifier: F) -> Result<(), Error>
     where
         F: FnOnce(Subscriber) -> Subscriber + Send + Sync,
@@ -199,6 +200,7 @@ impl SqlxSubscriptionTokenRepository {
 
 #[async_trait::async_trait]
 impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
+    #[tracing::instrument(name = "Saving subscription token", skip_all, fields(subscription_token = ?subscription_token))]
     async fn save(&self, subscription_token: &SubscriptionToken) -> Result<(), Error> {
         let data_model: SubscriptionTokenDataModel = subscription_token.into();
         sqlx::query!(
@@ -215,6 +217,7 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         Ok(())
     }
 
+    #[tracing::instrument(name = "Finding subscription token by token", skip_all, fields(token = ?token))]
     async fn find_by_token(&self, token: &str) -> Result<Option<SubscriptionToken>, Error> {
         sqlx::query!(
             "SELECT token, subscriber_id FROM subscription_tokens WHERE token = $1",

@@ -5,7 +5,7 @@ use crate::subscriber::domain::infrastructure::SubscriptionTokenRepository;
 use crate::subscriber::domain::model::Subscriber;
 use crate::subscriber::domain::model::SubscriptionToken;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Command {
     name: String,
     email: String,
@@ -25,6 +25,7 @@ impl Command {
     }
 }
 
+#[tracing::instrument(name = "Executing subscribe command", skip_all, fields(command = ?command))]
 pub async fn execute(
     command: Command,
     subscriber_repository: impl SubscriberRepository,
