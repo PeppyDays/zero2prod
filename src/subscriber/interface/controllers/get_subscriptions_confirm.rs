@@ -16,12 +16,12 @@ pub struct Request {
 
 #[tracing::instrument(name = "Confirming subscription", skip_all, fields(request = ?request))]
 pub async fn control(
-    State(subscriber_command_executor): State<Arc<dyn CommandExecutor>>,
+    State(command_executor): State<Arc<dyn CommandExecutor>>,
     Query(request): Query<Request>,
 ) -> impl IntoResponse {
     let command = ConfirmSubscriptionCommand::new(request.token).into();
 
-    match subscriber_command_executor.execute(command).await {
+    match command_executor.execute(command).await {
         Ok(_) => StatusCode::OK,
         Err(error) => match error {
             Error::InvalidAttribute => StatusCode::BAD_REQUEST,
