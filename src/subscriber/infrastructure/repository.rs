@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+use anyhow::Context;
 use chrono::NaiveDateTime;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -43,11 +45,12 @@ impl TryFrom<SubscriberDataModel> for Subscriber {
         let name = data_model.name.as_str().try_into()?;
         let email = data_model.email.as_str().try_into()?;
         let subscribed_at = data_model.subscribed_at.and_utc();
-        let status = data_model
-            .status
-            .as_str()
-            .try_into()
-            .map_err(|_| Error::InvalidAttribute)?;
+        let status = data_model.status.as_str().try_into().map_err(|_| {
+            Error::InvariantViolated(format!(
+                "Failed to infer subscriber status from {}",
+                data_model.status
+            ))
+        })?;
         Ok(Subscriber::new(
             data_model.id,
             name,
@@ -96,10 +99,8 @@ impl SubscriberRepository for SqlxSubscriberRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to execute query: {:?}", e);
-            Error::RepositoryOperationFailed
-        })?;
+        .context("Failed to save subscriber")
+        .map_err(Error::RepositoryOperationFailed)?;
 
         Ok(())
     }
@@ -113,7 +114,8 @@ impl SubscriberRepository for SqlxSubscriberRepository {
             .pool
             .begin()
             .await
-            .map_err(|_| Error::RepositoryOperationFailed)?;
+            .context("Failed to start transaction")
+            .map_err(Error::RepositoryOperationFailed)?;
 
         let subscriber = sqlx::query!(
                 "SELECT id, name, email, subscribed_at, status FROM subscribers WHERE id = $1 FOR UPDATE",
@@ -128,10 +130,10 @@ impl SubscriberRepository for SqlxSubscriberRepository {
                 r.subscribed_at,
                 r.status,
             ))
-            .map_err(|e| {
-                match e {
-                    sqlx::Error::RowNotFound => Error::SubscriberNotFound,
-                    _ => Error::RepositoryOperationFailed,
+            .map_err(|error| {
+                match error {
+                    sqlx::Error::RowNotFound => Error::SubscriberNotFound(*id),
+                    _ => Error::RepositoryOperationFailed(anyhow!(error).context("Failed to find subscriber")),
                 }
             })?
             .try_into()?;
@@ -147,12 +149,14 @@ impl SubscriberRepository for SqlxSubscriberRepository {
         )
         .execute(&mut *transaction)
         .await
-        .map_err(|_| Error::RepositoryOperationFailed)?;
+        .context("Failed to update subscriber")
+        .map_err(Error::RepositoryOperationFailed)?;
 
         transaction
             .commit()
             .await
-            .map_err(|_| Error::RepositoryOperationFailed)
+            .context("Failed to commit transaction")
+            .map_err(Error::RepositoryOperationFailed)
     }
 }
 
@@ -210,10 +214,8 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| {
-            tracing::error!("Failed to execute query: {:?}", e);
-            Error::RepositoryOperationFailed
-        })?;
+        .context("Failed to save subscription token")
+        .map_err(Error::RepositoryOperationFailed)?;
         Ok(())
     }
 
@@ -225,9 +227,9 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(|_| Error::RepositoryOperationFailed)?
+        .context("Failed to find subscription token by token")
+        .map_err(Error::RepositoryOperationFailed)?
         .map(|r| SubscriptionTokenDataModel::new(r.token, r.subscriber_id).try_into())
         .transpose()
-        .map_err(|_| Error::InvalidAttribute)
     }
 }

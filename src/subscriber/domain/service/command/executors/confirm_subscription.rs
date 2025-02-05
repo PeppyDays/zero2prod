@@ -26,7 +26,7 @@ pub async fn execute(
     let subscription_token = subscription_token_repository
         .find_by_token(command.token())
         .await?
-        .ok_or(Error::TokenNotFound)?;
+        .ok_or(Error::TokenNotFound(command.token().into()))?;
 
     subscriber_repository
         .modify_by_id(subscription_token.subscriber_id(), |mut subscriber| {

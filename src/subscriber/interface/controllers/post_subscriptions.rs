@@ -5,8 +5,10 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Form;
 
+use crate::subscriber::domain::error::Error;
 use crate::subscriber::domain::service::CommandExecutor;
 use crate::subscriber::domain::service::SubscribeCommand;
+use crate::subscriber::interface::response::Response;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Request {
@@ -14,7 +16,7 @@ pub struct Request {
     email: String,
 }
 
-#[tracing::instrument(name = "Adding a new subscriber", skip_all, fields(request = ?request))]
+#[tracing::instrument(name = "Registering a new subscriber", skip_all, fields(request = ?request))]
 pub async fn control(
     State(command_executor): State<Arc<dyn CommandExecutor>>,
     Form(request): Form<Request>,
@@ -22,7 +24,23 @@ pub async fn control(
     let command = SubscribeCommand::new(request.name, request.email).into();
 
     match command_executor.execute(command).await {
-        Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        Ok(_) => Response::new(StatusCode::OK, None),
+        Err(error) => {
+            tracing::error!("{:?}", error);
+            convert_error_to_response(error)
+        }
+    }
+}
+
+fn convert_error_to_response(error: Error) -> Response {
+    match error {
+        Error::InvariantViolated(message) => Response::new(StatusCode::BAD_REQUEST, Some(message)),
+        _ => Response::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Some(
+                "Failed to register a new subscriber because of the unexpected system issue."
+                    .into(),
+            ),
+        ),
     }
 }
