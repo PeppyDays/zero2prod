@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use reqwest::Client;
 use secrecy::ExposeSecret;
 use secrecy::SecretString;
@@ -59,9 +60,11 @@ impl EmailClient for FakeEmailClient {
             .timeout(self.timeout)
             .send()
             .await
-            .map_err(|_e| Error::EmailOperationFailed)?
+            .context("Failed to send a email")
+            .map_err(Error::EmailOperationFailed)?
             .error_for_status()
-            .map_err(|_e| Error::EmailOperationFailed)?;
+            .context("Succeed to send a email but response is not 2xx")
+            .map_err(Error::EmailOperationFailed)?;
 
         Ok(())
     }

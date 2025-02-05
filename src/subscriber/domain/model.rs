@@ -34,8 +34,8 @@ impl Subscriber {
     }
 
     pub fn create(name: &str, email: &str) -> Result<Self, Error> {
-        let name: Name = name.try_into().map_err(|_| Error::InvalidAttribute)?;
-        let email: Email = email.try_into().map_err(|_| Error::InvalidAttribute)?;
+        let name: Name = name.try_into()?;
+        let email: Email = email.try_into()?;
 
         Ok(Self {
             id: Uuid::now_v7(),
@@ -79,15 +79,19 @@ pub struct Name(String);
 impl Name {
     pub fn parse(name: &str) -> Result<Self, Error> {
         if name.trim().is_empty() {
-            return Err(Error::InvalidAttribute);
+            return Err(Error::InvariantViolated("Name cannot be empty".into()));
         }
 
         if name.len() >= 256 {
-            return Err(Error::InvalidAttribute);
+            return Err(Error::InvariantViolated(
+                "Name cannot be longer than 256".into(),
+            ));
         }
 
         if name.chars().any(|c| FORBIDDEN_CHARACTERS.contains(&c)) {
-            return Err(Error::InvalidAttribute);
+            return Err(Error::InvariantViolated(
+                "Name cannot have forbidden characters".into(),
+            ));
         }
 
         Ok(Name(name.into()))
@@ -116,7 +120,9 @@ impl Email {
         email
             .validate_email()
             .then_some(Email(email.into()))
-            .ok_or(Error::InvalidAttribute)
+            .ok_or(Error::InvariantViolated(
+                "Email address must be valid".into(),
+            ))
     }
 }
 

@@ -67,7 +67,7 @@ async fn sut_raises_token_not_found_error_if_token_does_not_exist(
     let actual = sut(command).await.unwrap_err();
 
     // Assert
-    assert!(matches!(actual, Error::TokenNotFound));
+    assert!(matches!(actual, Error::TokenNotFound(_)));
 }
 
 #[rstest::rstest]
@@ -94,5 +94,5 @@ async fn sut_raises_subscriber_not_found_error_if_subscriber_does_not_exist(
     let actual = sut(command).await.unwrap_err();
 
     // Assert
-    assert!(matches!(actual, Error::SubscriberNotFound));
+    assert!(matches!(actual, Error::SubscriberNotFound(_)));
 }

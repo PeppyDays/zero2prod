@@ -8,6 +8,7 @@ use axum::response::IntoResponse;
 use crate::subscriber::domain::error::Error;
 use crate::subscriber::domain::service::CommandExecutor;
 use crate::subscriber::domain::service::ConfirmSubscriptionCommand;
+use crate::subscriber::interface::response::Response;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Request {
@@ -22,13 +23,31 @@ pub async fn control(
     let command = ConfirmSubscriptionCommand::new(request.token).into();
 
     match command_executor.execute(command).await {
-        Ok(_) => StatusCode::OK,
-        Err(error) => match error {
-            Error::InvalidAttribute => StatusCode::BAD_REQUEST,
-            Error::CommandMismatched => StatusCode::BAD_REQUEST,
-            Error::TokenNotFound => StatusCode::NOT_FOUND,
-            Error::SubscriberNotFound => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        },
+        Ok(_) => Response::new(StatusCode::OK, None),
+        Err(error) => {
+            tracing::error!("{}", error);
+            convert_error_to_response(error)
+        }
+    }
+}
+
+fn convert_error_to_response(error: Error) -> Response {
+    match error {
+        Error::InvariantViolated(_) => Response::new(
+            StatusCode::BAD_REQUEST,
+            Some("Failed to load the subscriber having the token.".into()),
+        ),
+        Error::TokenNotFound(_) => Response::new(
+            StatusCode::NOT_FOUND,
+            Some("Failed to find the token.".into()),
+        ),
+        Error::SubscriberNotFound(_) => Response::new(
+            StatusCode::NOT_FOUND,
+            Some("Failed to find a subscriber with the token.".into()),
+        ),
+        _ => Response::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Some("Failed to confirm subscription because of the unexpected system issue.".into()),
+        ),
     }
 }

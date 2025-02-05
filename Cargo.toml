@@ -11,6 +11,7 @@ name = "api"
 path = "runner/api.rs"
 
 [dependencies]
+anyhow = "1"
 async-trait = "0.1"
 axum = "0.8"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -22,6 +23,7 @@ secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "macros", "postgres", "uuid", "chrono", "migrate"] }
 strum = { version = "0.26", features = ["derive"] }
+thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tower-http = { version = "0.6", features = ["trace"] }
 tracing = { version = "0.1", features = ["log"] }

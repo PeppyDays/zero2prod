@@ -127,7 +127,7 @@ async fn sut_raises_invalid_attributes_error_if_name_is_longer_than_256(
 
     // Assert
     assert!(actual.is_err());
-    assert!(matches!(actual.unwrap_err(), Error::InvalidAttribute));
+    assert!(matches!(actual.unwrap_err(), Error::InvariantViolated(_)));
 }
 
 #[rstest::rstest]
@@ -214,5 +214,5 @@ async fn sut_raises_failed_email_operation_error_if_email_server_responds_with_i
     let actual = sut(command).await.unwrap_err();
 
     // Assert
-    assert!(matches!(actual, Error::EmailOperationFailed));
+    assert!(matches!(actual, Error::EmailOperationFailed(_)));
 }

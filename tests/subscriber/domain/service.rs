@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use tokio::sync::RwLock;
 use zero2prod::subscriber::domain::error::Error;
 use zero2prod::subscriber::domain::model::Email;
@@ -83,9 +84,19 @@ impl CommandExecutorStub {
 #[async_trait::async_trait]
 impl CommandExecutor for CommandExecutorStub {
     async fn execute(&self, _: Command) -> Result<(), Error> {
-        if let Some(error) = &*self.error {
-            return Err(error.clone());
-        }
+        let error = &*self.error;
+        if let Some(error) = error {
+            return match error {
+                Error::InvariantViolated(message) => Err(Error::InvariantViolated(message.into())),
+                Error::TokenNotFound(message) => Err(Error::TokenNotFound(message.into())),
+                Error::SubscriberNotFound(id) => Err(Error::SubscriberNotFound(*id)),
+                Error::RepositoryOperationFailed(_) => {
+                    Err(Error::RepositoryOperationFailed(anyhow!("")))
+                }
+                Error::EmailOperationFailed(_) => Err(Error::EmailOperationFailed(anyhow!(""))),
+                Error::FailedUnexpectedly(_) => Err(Error::FailedUnexpectedly(anyhow!(""))),
+            };
+        };
         Ok(())
     }
 }
@@ -97,7 +108,7 @@ pub fn command_executor_stub() -> CommandExecutorStub {
 
 #[rstest::fixture]
 pub fn faulty_command_executor_stub(
-    #[default(Error::FailedUnexpectedly)] error: Error,
+    #[default(Error::FailedUnexpectedly(anyhow!("")))] error: Error,
 ) -> CommandExecutorStub {
     CommandExecutorStub::new(Some(error))
 }

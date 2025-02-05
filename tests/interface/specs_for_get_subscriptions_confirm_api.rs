@@ -1,4 +1,5 @@
 use reqwest::StatusCode;
+use uuid::Uuid;
 use zero2prod::subscriber::domain::error::Error;
 use zero2prod::subscriber::domain::service::ConfirmSubscriptionCommand;
 
@@ -69,13 +70,9 @@ async fn sut_responds_status_bad_request_if_token_is_missing(
 
 #[rstest::rstest]
 #[tokio::test]
-async fn sut_responds_status_not_found_if_token_does_not_exist(
-    #[with(Error::TokenNotFound)]
-    #[from(faulty_command_executor_stub)]
-    command_executor_stub: CommandExecutorStub,
-    token: String,
-) {
+async fn sut_responds_status_not_found_if_token_does_not_exist(token: String) {
     // Arrange
+    let command_executor_stub = faulty_command_executor_stub(Error::TokenNotFound(token.clone()));
     let sut = SystemSurface::new(command_executor_stub).await;
 
     // Act
@@ -89,7 +86,7 @@ async fn sut_responds_status_not_found_if_token_does_not_exist(
 #[rstest::rstest]
 #[tokio::test]
 async fn sut_responds_status_not_found_if_subscriber_inferred_from_token_does_not_exist(
-    #[with(Error::SubscriberNotFound)]
+    #[with(Error::SubscriberNotFound(Uuid::now_v7()))]
     #[from(faulty_command_executor_stub)]
     command_executor_stub: CommandExecutorStub,
     token: String,
