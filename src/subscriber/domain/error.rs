@@ -8,6 +8,8 @@ pub enum Error {
     TokenNotFound(String),
     #[error("Failed to find the subscriber.")]
     SubscriberNotFound(Uuid),
+    #[error("Failed to process query due to collectovity.")]
+    QueryResultCollectivityMismatched,
     #[error("Failed to operate on repository.")]
     RepositoryOperationFailed(#[source] anyhow::Error),
     #[error("Failed to process Email request.")]

@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::subscriber::domain::error::Error;
 use crate::subscriber::domain::infrastructure::SubscriberRepository;
 use crate::subscriber::domain::infrastructure::SubscriptionTokenRepository;
+use crate::subscriber::domain::model::Status;
 use crate::subscriber::domain::model::Subscriber;
 use crate::subscriber::domain::model::SubscriptionToken;
 
@@ -86,6 +87,29 @@ impl SqlxSubscriberRepository {
 
 #[async_trait::async_trait]
 impl SubscriberRepository for SqlxSubscriberRepository {
+    async fn find_by_status(&self, status: Status) -> Result<Vec<Subscriber>, Error> {
+        sqlx::query!(
+            "SELECT id, name, email, subscribed_at, status FROM subscribers WHERE status = $1",
+            status.as_ref().into(),
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch subscribers by status")
+        .map_err(Error::RepositoryOperationFailed)?
+        .into_iter()
+        .map(|record| {
+            SubscriberDataModel::new(
+                record.id,
+                record.name,
+                record.email,
+                record.subscribed_at,
+                record.status,
+            )
+        })
+        .map(|data_model| Subscriber::try_from(data_model))
+        .collect()
+    }
+
     #[tracing::instrument(name = "Saving subscriber", skip_all, fields(subscriber = ?subscriber))]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), Error> {
         let data_model: SubscriberDataModel = subscriber.into();
@@ -229,7 +253,9 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         .await
         .context("Failed to find subscription token by token")
         .map_err(Error::RepositoryOperationFailed)?
-        .map(|r| SubscriptionTokenDataModel::new(r.token, r.subscriber_id).try_into())
+        .map(|record| {
+            SubscriptionTokenDataModel::new(record.token, record.subscriber_id).try_into()
+        })
         .transpose()
     }
 }

@@ -49,7 +49,7 @@ pub fn new_command_executor(
     subscription_token_repository: impl SubscriptionTokenRepository,
     email_client: impl EmailClient,
 ) -> CommandExecutorFuncion {
-    Arc::new(move |command: Command| {
+    Arc::new(move |command| {
         let subscriber_repository = subscriber_repository.clone();
         let subscription_token_repository = subscription_token_repository.clone();
         let email_client = email_client.clone();
