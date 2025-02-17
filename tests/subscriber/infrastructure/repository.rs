@@ -36,7 +36,7 @@ pub async fn find_subscriber_by_email(email: &str) -> Subscriber {
 
     let data_model =
         SubscriberDataModel::new(row.id, row.name, row.email, row.subscribed_at, row.status);
-    data_model.try_into().unwrap()
+    data_model.into()
 }
 
 #[rstest::fixture]
@@ -57,5 +57,5 @@ pub async fn find_subscription_token_by_subscriber_id(subscriber_id: &Uuid) -> S
     .unwrap();
 
     let data_model = SubscriptionTokenDataModel::new(row.token, row.subscriber_id);
-    data_model.try_into().unwrap()
+    data_model.into()
 }

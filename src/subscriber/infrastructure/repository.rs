@@ -1,13 +1,19 @@
+use std::str::FromStr;
+
 use anyhow::anyhow;
 use anyhow::Context;
 use chrono::NaiveDateTime;
 use sqlx::Pool;
 use sqlx::Postgres;
+use sqlx::Transaction;
 use uuid::Uuid;
 
 use crate::subscriber::domain::error::Error;
 use crate::subscriber::domain::infrastructure::SubscriberRepository;
 use crate::subscriber::domain::infrastructure::SubscriptionTokenRepository;
+use crate::subscriber::domain::model::Email;
+use crate::subscriber::domain::model::Name;
+use crate::subscriber::domain::model::Status;
 use crate::subscriber::domain::model::Subscriber;
 use crate::subscriber::domain::model::SubscriptionToken;
 
@@ -38,26 +44,13 @@ impl SubscriberDataModel {
     }
 }
 
-impl TryFrom<SubscriberDataModel> for Subscriber {
-    type Error = Error;
-
-    fn try_from(data_model: SubscriberDataModel) -> Result<Self, Self::Error> {
-        let name = data_model.name.as_str().try_into()?;
-        let email = data_model.email.as_str().try_into()?;
+impl From<SubscriberDataModel> for Subscriber {
+    fn from(data_model: SubscriberDataModel) -> Self {
+        let name = unsafe { Name::new_unchecked(&data_model.name) };
+        let email = unsafe { Email::new_unchecked(&data_model.email) };
         let subscribed_at = data_model.subscribed_at.and_utc();
-        let status = data_model.status.as_str().try_into().map_err(|_| {
-            Error::InvariantViolated(format!(
-                "Failed to infer subscriber status from {}",
-                data_model.status
-            ))
-        })?;
-        Ok(Subscriber::new(
-            data_model.id,
-            name,
-            email,
-            subscribed_at,
-            status,
-        ))
+        let status = Status::from_str(data_model.status.as_str()).unwrap_or(Status::Unexpected);
+        Subscriber::new(data_model.id, name, email, subscribed_at, status)
     }
 }
 
@@ -81,6 +74,50 @@ pub struct SqlxSubscriberRepository {
 impl SqlxSubscriberRepository {
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
+    }
+
+    async fn find_by_id_with_exclusive_lock(
+        transaction: &mut Transaction<'_, Postgres>,
+        id: &Uuid,
+    ) -> Result<SubscriberDataModel, Error> {
+        sqlx::query!(
+                "SELECT id, name, email, subscribed_at, status FROM subscribers WHERE id = $1 FOR UPDATE",
+                id,
+            )
+            .fetch_one(&mut **transaction)
+            .await
+            .map(|r| SubscriberDataModel::new(
+                r.id,
+                r.name,
+                r.email,
+                r.subscribed_at,
+                r.status,
+            ))
+            .map_err(|error| {
+                match error {
+                    sqlx::Error::RowNotFound => Error::SubscriberNotFound(*id),
+                    _ => Error::RepositoryOperationFailed(anyhow!(error).context("Failed to find subscriber")),
+                }
+            })
+    }
+
+    async fn update(
+        transaction: &mut Transaction<'_, Postgres>,
+        data_model: SubscriberDataModel,
+    ) -> Result<(), Error> {
+        sqlx::query!(
+            "UPDATE subscribers SET name = $1, email = $2, status = $3 WHERE id = $4",
+            data_model.name,
+            data_model.email,
+            data_model.status,
+            data_model.id,
+        )
+        .execute(&mut **transaction)
+        .await
+        .context("Failed to update subscriber")
+        .map_err(Error::RepositoryOperationFailed)?;
+
+        Ok(())
     }
 }
 
@@ -117,40 +154,12 @@ impl SubscriberRepository for SqlxSubscriberRepository {
             .context("Failed to start transaction")
             .map_err(Error::RepositoryOperationFailed)?;
 
-        let subscriber = sqlx::query!(
-                "SELECT id, name, email, subscribed_at, status FROM subscribers WHERE id = $1 FOR UPDATE",
-                id,
-            )
-            .fetch_one(&mut *transaction)
-            .await
-            .map(|r| SubscriberDataModel::new(
-                r.id,
-                r.name,
-                r.email,
-                r.subscribed_at,
-                r.status,
-            ))
-            .map_err(|error| {
-                match error {
-                    sqlx::Error::RowNotFound => Error::SubscriberNotFound(*id),
-                    _ => Error::RepositoryOperationFailed(anyhow!(error).context("Failed to find subscriber")),
-                }
-            })?
-            .try_into()?;
-
-        let modified_data_model: SubscriberDataModel = (&modifier(subscriber)).into();
-
-        sqlx::query!(
-            "UPDATE subscribers SET name = $1, email = $2, status = $3 WHERE id = $4",
-            modified_data_model.name,
-            modified_data_model.email,
-            modified_data_model.status,
-            modified_data_model.id,
-        )
-        .execute(&mut *transaction)
-        .await
-        .context("Failed to update subscriber")
-        .map_err(Error::RepositoryOperationFailed)?;
+        let subscriber =
+            SqlxSubscriberRepository::find_by_id_with_exclusive_lock(&mut transaction, id)
+                .await?
+                .into();
+        let data_model: SubscriberDataModel = (&modifier(subscriber)).into();
+        SqlxSubscriberRepository::update(&mut transaction, data_model).await?;
 
         transaction
             .commit()
@@ -174,14 +183,9 @@ impl SubscriptionTokenDataModel {
     }
 }
 
-impl TryFrom<SubscriptionTokenDataModel> for SubscriptionToken {
-    type Error = Error;
-
-    fn try_from(data_model: SubscriptionTokenDataModel) -> Result<Self, Self::Error> {
-        Ok(SubscriptionToken::new(
-            data_model.token,
-            data_model.subscriber_id,
-        ))
+impl From<SubscriptionTokenDataModel> for SubscriptionToken {
+    fn from(data_model: SubscriptionTokenDataModel) -> Self {
+        SubscriptionToken::new(data_model.token, data_model.subscriber_id)
     }
 }
 
@@ -221,7 +225,7 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
 
     #[tracing::instrument(name = "Finding subscription token by token", skip_all, fields(token = ?token))]
     async fn find_by_token(&self, token: &str) -> Result<Option<SubscriptionToken>, Error> {
-        sqlx::query!(
+        Ok(sqlx::query!(
             "SELECT token, subscriber_id FROM subscription_tokens WHERE token = $1",
             token,
         )
@@ -229,7 +233,6 @@ impl SubscriptionTokenRepository for SqlxSubscriptionTokenRepository {
         .await
         .context("Failed to find subscription token by token")
         .map_err(Error::RepositoryOperationFailed)?
-        .map(|r| SubscriptionTokenDataModel::new(r.token, r.subscriber_id).try_into())
-        .transpose()
+        .map(|r| SubscriptionTokenDataModel::new(r.token, r.subscriber_id).into()))
     }
 }

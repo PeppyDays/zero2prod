@@ -18,9 +18,7 @@ pub fn subscription_token(
     #[default(Uuid::now_v7().to_string())] token: String,
     #[default(Uuid::now_v7())] subscriber_id: Uuid,
 ) -> SubscriptionToken {
-    SubscriptionTokenDataModel::new(token, subscriber_id)
-        .try_into()
-        .unwrap()
+    SubscriptionTokenDataModel::new(token, subscriber_id).into()
 }
 
 #[rstest::fixture]

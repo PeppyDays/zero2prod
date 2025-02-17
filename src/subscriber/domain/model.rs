@@ -77,6 +77,16 @@ const FORBIDDEN_CHARACTERS: [char; 11] = ['/', '(', ')', '\"', '<', '>', '\\', '
 pub struct Name(String);
 
 impl Name {
+    /// .
+    ///
+    /// # Safety
+    /// This constructor creates Name without validation. Be careful to use it.
+    /// For now, this is only for repository to create Name without validation.
+    /// .
+    pub unsafe fn new_unchecked(name: &str) -> Self {
+        Self(name.into())
+    }
+
     pub fn parse(name: &str) -> Result<Self, Error> {
         if name.trim().is_empty() {
             return Err(Error::InvariantViolated("Name cannot be empty".into()));
@@ -116,6 +126,16 @@ impl AsRef<str> for Name {
 pub struct Email(String);
 
 impl Email {
+    /// .
+    ///
+    /// # Safety
+    /// This constructor creates Email without validation. Be careful to use it.
+    /// For now, this is only for repository to create Email without validation.
+    /// .
+    pub unsafe fn new_unchecked(email: &str) -> Self {
+        Self(email.into())
+    }
+
     pub fn parse(email: &str) -> Result<Self, Error> {
         email
             .validate_email()
@@ -142,6 +162,7 @@ impl AsRef<str> for Email {
 
 #[derive(Clone, Debug, EnumString, AsRefStr)]
 pub enum Status {
+    Unexpected,
     Pending,
     Confirmed,
 }
